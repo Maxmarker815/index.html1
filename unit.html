@@ -2551,11 +2551,7 @@
     btn.textContent = '⏳ Отправляю...';
 
     try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'confirm', orderId: orderId })
-      });
+      const resp = await fetch(`${url}?action=confirm&orderId=${encodeURIComponent(orderId)}`);
       const data = await resp.json();
       if (data.success) {
         // Update local state

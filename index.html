@@ -698,7 +698,9 @@ function loadDashboard() {
 
 // ADMIN - Stock Grid
 function renderStockGrid() {
-  $('stockGrid').innerHTML = PRODUCTS.map(p => {
+  const el = $('stockGrid');
+  if (!el) return;
+  el.innerHTML = PRODUCTS.map(p => {
     const qty = stock[p.id] || 0;
     const numClass = qty === 0 ? 'zero' : (qty <= 2 ? 'low' : '');
     return `<div class="stock-card">
@@ -716,6 +718,7 @@ function renderStockGrid() {
 function renderLocalOrders() {
   loadOrders();
   const tbody = $('adminRows');
+  if (!tbody) return;
   if (orders.length===0) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--ink-faint);padding:30px">Нет заказов</td></tr>'; return; }
   tbody.innerHTML = orders.map((o,i) => {
     const d = new Date(o.date);

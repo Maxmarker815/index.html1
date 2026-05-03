@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit · учёт закупов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Warm, soft, minimal palette */
+    --bg: #faf6f0;            /* warm off-white */
+    --bg-2: #f3ede3;          /* soft beige */
+    --bg-3: #ece4d6;          /* deeper beige */
+    --panel: #ffffff;
+    --ink: #2b2620;           /* warm dark */
+    --ink-2: #5a524a;
+    --ink-3: #8a8278;
+    --ink-faint: #b8b0a4;
+    --line: #ebe3d6;
+    --line-2: #ddd3c2;
+    --accent: #c08263;        /* terracotta, warm */
+    --accent-soft: #e8d5c5;
+    --good: #6b8e5a;          /* sage green */
+    --good-soft: #d9e3cf;
+    --bad: #b85c4d;           /* warm red */
+    --bad-soft: #f0d6cf;
+    --warn: #c8975e;          /* amber */
+    --sans: 'Inter Tight', -apple-system, sans-serif;
+    --serif: 'Instrument Serif', Georgia, serif;
+    --shadow-sm: 0 1px 2px rgba(43, 38, 32, 0.04);
+    --shadow: 0 2px 12px rgba(43, 38, 32, 0.06);
+    --shadow-lg: 0 4px 24px rgba(43, 38, 32, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select, textarea { font-family: inherit; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ============= SIDEBAR ============= */
+  aside {
+    background: var(--bg-2);
+    border-right: 1px solid var(--line);
+    padding: 28px 22px;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .brand { margin-bottom: 32px; }
+  .brand-title {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-style: italic;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .brand-sub {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .nav-section { margin-bottom: 26px; }
+  .nav-section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-list { display: flex; flex-direction: column; gap: 2px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.6); color: var(--ink); }
+  .nav-item.active {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-item .label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nav-item .count {
+    font-size: 11px;
+    color: var(--ink-3);
+    background: var(--bg-3);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .nav-item.active .count { background: var(--accent-soft); color: var(--accent); }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { background: var(--bg-3); color: var(--accent); }
+
+  .month-label {
+    padding: 8px 12px 4px;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  /* ============= MAIN ============= */
+  main {
+    padding: 36px 44px 80px;
+    overflow-x: auto;
+  }
+
+  .page-header {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .page-title {
+    font-family: var(--serif);
+    font-size: 42px;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .page-subtitle {
+    margin-top: 8px;
+    color: var(--ink-3);
+    font-size: 14px;
+  }
+  .page-date {
+    text-align: right;
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+  .page-date strong {
+    display: block;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  /* ============= CONFIG ============= */
+  .config {
+    display: flex;
+    gap: 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 22px;
+    overflow-x: auto;
+  }
+  .config-item {
+    flex: 1;
+    min-width: 130px;
+    padding: 12px 16px;
+    border-right: 1px solid var(--line);
+  }
+  .config-item:last-child { border-right: none; }
+  .config-item label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .config-item .input-row { display: flex; align-items: baseline; gap: 5px; }
+  .config-item input {
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+    padding: 0;
+  }
+  .config-item input:focus { color: var(--accent); }
+  .config-item .unit {
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* ============= STATS ============= */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  #summaryBatch {
+    grid-template-columns: minmax(90px, 0.45fr) repeat(5, minmax(150px, 1fr));
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat.feature {
+    background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-2) 100%);
+    border-color: var(--accent-soft);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat.feature .stat-value { color: var(--accent); }
+  .stat-sub { margin-top: 6px; font-size: 11.5px; color: var(--ink-3); }
+  .stat-sub.pos { color: var(--good); font-weight: 500; }
+  .stat-sub.neg { color: var(--bad); font-weight: 500; }
+
+  /* ============= TOOLBAR ============= */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink-2);
+  }
+
+  .batch-name-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 42px;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    padding: 4px 8px;
+    border-radius: 6px;
+    outline: none;
+    width: 100%;
+    transition: all 0.15s;
+  }
+  .batch-name-input:hover { border-color: var(--line); }
+  .batch-name-input:focus { border-color: var(--accent); background: var(--panel); }
+
+  .batch-status {
+    display: inline-block;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+  }
+  .batch-status.draft    { background-color: var(--bg-3);       border-color: var(--line-2); color: var(--ink-2); }
+  .batch-status.ordered  { background-color: #f0e3cf;           border-color: #e0c49a;       color: var(--warn); }
+  .batch-status.delivered{ background-color: var(--good-soft);  border-color: #b0cc9e;       color: var(--good); }
+  .batch-status.sold     { background-color: var(--accent-soft); border-color: #d4a98e;      color: var(--accent); }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: #a86d52; border-color: #a86d52; color: white; }
+  .btn.ghost { background: transparent; border-color: transparent; }
+  .btn.ghost:hover { background: var(--bg-2); border-color: var(--line); }
+  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+
+  /* ============= TABLE ============= */
+  .table-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    min-width: 1280px;
+  }
+  thead {
+    background: var(--bg-2);
+  }
+  thead th {
+    text-align: left;
+    padding: 14px 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-2);
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+  thead tr {
+    box-shadow: 999px 0 0 var(--bg-2);
+  }
+  thead th .hint {
+    display: block;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: 2px;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--line);
+    transition: background 0.1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-2); }
+  tbody td { padding: 4px 6px; vertical-align: middle; }
+
+  tbody td.calc {
+    padding: 14px 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody td.calc.strong { color: var(--ink); font-weight: 600; }
+  tbody td.calc.profit { color: var(--good); font-weight: 600; }
+  tbody td.calc.danger { color: var(--bad); font-weight: 600; }
+  tbody td.calc .small {
+    display: block;
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  .cell-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink);
+    font-size: 13px;
+    padding: 10px;
+    width: 100%;
+    outline: none;
+    border-radius: 6px;
+    transition: all 0.15s;
+    font-variant-numeric: tabular-nums;
+  }
+  .cell-input:hover { border-color: var(--line-2); background: var(--bg); }
+  .cell-input:focus { border-color: var(--accent); background: var(--bg); }
+  .cell-input.name { font-weight: 500; }
+
+  .col-num {
+    width: 44px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 12px;
+    padding: 14px 8px !important;
+    font-weight: 500;
+  }
+  .col-action { width: 50px; text-align: center; }
+  .copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 6px 6px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--accent); background: var(--accent-soft); }
+  .modal-batch-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 4px;
+  }
+  .modal-batch-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.1s;
+  }
+  .modal-batch-item:last-child { border-bottom: none; }
+  .modal-batch-item:hover { background: var(--bg-2); }
+  .modal-batch-item.selected { background: var(--accent-soft); }
+  .modal-batch-item-name { font-weight: 600; font-size: 13px; color: var(--ink); }
+  .modal-batch-item-sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .col-name { min-width: 150px; width: 165px; }
+  #dataTable th:nth-child(11),
+  #dataTable td:nth-child(11) { padding-left: 22px; border-left: 1px solid var(--line); }
+  #dataTable th:nth-child(2),
+  #dataTable td:nth-child(2) { padding-right: 0; }
+  #dataTable th:nth-child(3),
+  #dataTable td:nth-child(3) { padding-left: 0; }
+  .col-narrow { width: 64px !important; min-width: 64px !important; max-width: 64px !important; }
+  .col-narrow input.cell-input { width: 100%; min-width: 0; padding: 10px 6px; }
+  td.calc.col-narrow { text-align: right; padding-right: 4px; }
+  #dataTable th:nth-child(16) { text-align: right !important; padding-left: 0 !important; padding-right: 0 !important; }
+  #dataTable td:nth-child(16) { text-align: right !important; padding-left: 0 !important; padding-right: 4px !important; }
+  #dataTable th:nth-child(15) { text-align: right !important; padding-right: 0 !important; padding-left: 0 !important; }
+  #dataTable td:nth-child(15) { padding-right: 0 !important; padding-left: 0 !important; }
+  #dataTable td:nth-child(15) input.cell-input { text-align: right !important; padding-right: 4px !important; padding-left: 0 !important; }
+
+  tbody tr[draggable="true"] {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='26' viewBox='0 0 22 26'%3E%3Cpath d='M4.5 13 L4.5 8.5 a2 2 0 0 1 4 0 L8.5 4.5 a2 2 0 0 1 4 0 L12.5 6 a2 2 0 0 1 4 0 L16.5 9 a2 2 0 0 1 4 0 L20.5 16 a8 8 0 0 1-8 8 L10 24 a8 8 0 0 1-8-8 L2 15.5 a2 2 0 0 1 0-4 a2 2 0 0 1 1.8 1.1 Z' fill='white' stroke='%23c0b8b0' stroke-width='1.1' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 9 4, grab;
+  }
+  tbody tr[draggable="true"]:active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='26' viewBox='0 0 22 26'%3E%3Cpath d='M4.5 13 L4.5 11 a2 2 0 0 1 4 0 L8.5 9 a2 2 0 0 1 4 0 L12.5 10 a2 2 0 0 1 4 0 L16.5 11.5 a2 2 0 0 1 4 0 L20.5 16 a8 8 0 0 1-8 8 L10 24 a8 8 0 0 1-8-8 L2 15.5 a2 2 0 0 1 0-4 a2 2 0 0 1 1.8 1.1 Z' fill='white' stroke='%23c0b8b0' stroke-width='1.1' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 9 4, grabbing;
+  }
+  tr.dragging { opacity: 0.3; background: var(--bg-3) !important; }
+  .nav-item.drag-over {
+    background: var(--panel) !important;
+    border-color: var(--warn) !important;
+    color: var(--ink) !important;
+    box-shadow: 0 2px 8px rgba(200,151,94,0.18);
+  }
+
+  .del-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 6px 10px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .del-btn:hover { color: var(--bad); background: var(--bad-soft); }
+
+  .empty {
+    text-align: center;
+    padding: 80px 20px !important;
+    color: var(--ink-3);
+  }
+  .empty-icon {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 56px;
+    color: var(--line-2);
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+  .empty-text { font-size: 14px; margin-bottom: 6px; color: var(--ink-2); }
+  .empty-sub { font-size: 12.5px; color: var(--ink-3); }
+
+  tfoot td {
+    padding: 16px 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    background: var(--bg-2);
+    border-top: 1px solid var(--line-2);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  tfoot td.label-cell {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  tfoot td.profit-total { color: var(--good); }
+  tfoot td.danger-total { color: var(--bad); }
+
+  /* ============= BATCH GRID ============= */
+  .batch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .batch-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .batch-card:hover {
+    border-color: var(--accent-soft);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .batch-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .batch-card-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .batch-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+  }
+  .batch-card-stat { display: flex; flex-direction: column; gap: 2px; }
+  .batch-card-stat-label {
+    font-size: 10px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .batch-card-stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .batch-card-stat-value.pos { color: var(--good); }
+  .batch-card-stat-value.neg { color: var(--bad); }
+
+  /* ============= MODAL ============= */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(43, 38, 32, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal h3 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 26px;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .modal p {
+    color: var(--ink-3);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .modal-field input, .modal-field select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font-size: 14px;
+    outline: none;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--accent); }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  /* ============= HELP ============= */
+  .help-section {
+    margin-top: 300px;
+    padding: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    opacity: 0.7;
+  }
+  .help-section h3 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .help-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    color: var(--ink-2);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .help-grid > div strong {
+    display: block;
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .help-grid code {
+    color: var(--accent);
+    background: var(--bg-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ============= FLORAL ============= */
+  .floral-branch {
+    width: calc(100% + 44px);
+    margin-left: -22px;
+    margin-top: 20px;
+    pointer-events: none;
+    opacity: 0.72;
+    filter: drop-shadow(0 3px 10px rgba(210,140,165,0.25));
+    display: block;
+  }
+
+  @keyframes sakuraDrift {
+    0%   { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; }
+    6%   { opacity: 0.75; }
+    94%  { opacity: 0.45; }
+    100% { transform: translateY(110vh) translateX(var(--drift)) rotate(var(--spin)); opacity: 0; }
+  }
+  @keyframes sakuraSway {
+    0%, 100% { margin-left: 0; }
+    50%       { margin-left: 8px; }
+  }
+
+  .sakura-petal {
+    position: fixed;
+    top: -18px;
+    pointer-events: none;
+    z-index: 9;
+    border-radius: 50% 4% 50% 4%;
+    animation: sakuraDrift var(--dur) ease-in var(--delay) forwards;
+  }
+
+
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    aside {
+      position: fixed;
+      top: 0; left: 0;
+      width: 280px;
+      transform: translateX(-100%);
+      transition: transform 0.25s;
+      z-index: 40;
+      box-shadow: var(--shadow-lg);
+    }
+    aside.open { transform: translateX(0); }
+    .mobile-toggle { display: flex; }
+    main { padding: 70px 20px 60px; }
+    .page-title, .batch-name-input { font-size: 30px; }
+  }
+
+  /* ============= ORDERS VIEW ============= */
+  .orders-filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .orders-filter-btn {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .orders-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .orders-filter-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .orders-refresh-btn {
+    margin-left: auto;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .orders-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .orders-summary-strip {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .ostat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 130px;
+  }
+  .ostat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .ostat-val {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-style: italic;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .ostat.feature .ostat-val { color: var(--accent); }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .order-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: start;
+    transition: border-color 0.15s;
+  }
+  .order-card:hover { border-color: var(--accent-soft); }
+  .order-card.confirmed {
+    border-color: #b0cc9e;
+    background: linear-gradient(135deg, var(--good-soft) 0%, var(--panel) 100%);
+  }
+  .order-card.preorder {
+    border-color: #e0c49a;
+    background: linear-gradient(135deg, #fdf5e8 0%, var(--panel) 100%);
+  }
+  .order-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .order-id {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    font-family: monospace;
+  }
+  .order-date {
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+  .order-badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+  .order-badge.new { background: var(--bad-soft); color: var(--bad); border-color: #e0b0a6; }
+  .order-badge.paid { background: var(--good-soft); color: var(--good); border-color: #b0cc9e; }
+  .order-badge.pre { background: #f0e3cf; color: var(--warn); border-color: #e0c49a; }
+  .order-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .order-contact {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-bottom: 5px;
+  }
+  .order-items {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-bottom: 5px;
+    line-height: 1.45;
+  }
+  .order-promo {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-right: 6px;
+  }
+  .order-total {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-style: italic;
+    color: var(--ink);
+    font-weight: 400;
+    margin-bottom: 10px;
+  }
+  .order-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    min-width: 140px;
+  }
+  .btn-confirm {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    width: 100%;
+    text-align: center;
+  }
+  .btn-confirm:hover { background: #a86d52; }
+  .btn-confirm:disabled {
+    background: var(--good);
+    cursor: default;
+    opacity: 0.85;
+  }
+  .btn-confirm.loading {
+    background: var(--ink-3);
+    cursor: wait;
+  }
+  .btn-wa {
+    background: transparent;
+    color: #25d366;
+    border: 1px solid #25d366;
+    border-radius: 9px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+  }
+  .btn-wa:hover { background: #25d366; color: white; }
+
+  .orders-empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-3);
+  }
+  .orders-empty-icon {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 56px;
+    color: var(--line-2);
+    margin-bottom: 14px;
+  }
+  .orders-error {
+    background: var(--bad-soft);
+    border: 1px solid #e0b0a6;
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: var(--bad);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .orders-script-setup {
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.7;
+  }
+  .orders-script-setup strong { color: var(--ink); }
+  .orders-script-setup code {
+    background: var(--panel);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .orders-script-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    margin-top: 8px;
+    font-family: monospace;
+  }
+  .orders-script-input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
+  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="#5a524a" stroke-width="1.5" stroke-linecap="round">
+    <path d="M1 1h16M1 7h16M1 13h16"/>
+  </svg>
+</button>
+
+<div class="app">
+
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-title">Unit</div>
+      <div class="brand-sub">Учёт закупов · PDD → KG</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title"><span>Обзор</span></div>
+      <div class="nav-list">
+        <button class="nav-item" data-view="all" data-filter="all">
+          <span class="label">Все закупы</span>
+          <span class="count" id="allCount">0</span>
+        </button>
+        <button class="nav-item" data-view="all" data-filter="draft">
+          <span class="label">Черновики</span>
+          <span class="count" id="draftCount">0</span>
+        </button>
+        <button class="nav-item" data-view="all" data-filter="ordered">
+          <span class="label">Заказаны</span>
+          <span class="count" id="orderedCount">0</span>
+        </button>
+        <button class="nav-item" data-view="all" data-filter="delivered">
+          <span class="label">Получены</span>
+          <span class="count" id="deliveredCount">0</span>
+        </button>
+        <button class="nav-item" data-view="all" data-filter="sold">
+          <span class="label">Проданы</span>
+          <span class="count" id="soldCount">0</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">
+        <span>Закупы</span>
+        <button class="icon-btn" id="addBatchBtn" title="Новый закуп">+</button>
+      </div>
+      <div class="nav-list" id="batchList"></div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title"><span>Магазин</span></div>
+      <div class="nav-list">
+        <button class="nav-item" data-view="orders" id="navOrders">
+          <span class="label">📦 Заказы</span>
+          <span class="count" id="ordersNewCount">—</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title"><span>Данные</span></div>
+      <div class="nav-list">
+        <button class="nav-item" id="exportDataBtn">
+          <span class="label">⤓ Сохранить все данные</span>
+        </button>
+        <button class="nav-item" id="importDataBtn">
+          <span class="label">⤒ Загрузить данные</span>
+        </button>
+        <button class="nav-item" id="exportAllBtn">
+          <span class="label">Экспорт CSV</span>
+        </button>
+        <button class="nav-item" id="settingsBtn">
+          <span class="label">Сохранить как приложение</span>
+        </button>
+      </div>
+    </div>
+    <svg class="floral-branch" viewBox="0 0 260 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- ветки -->
+      <path d="M0 210 Q40 185 65 155 Q90 125 125 105 Q160 85 200 58 Q225 44 252 24" stroke="#7a4838" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M65 155 Q78 132 102 118" stroke="#7a4838" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M125 105 Q138 84 156 72" stroke="#7a4838" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M175 78 Q180 58 192 48" stroke="#7a4838" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M200 58 Q208 42 218 36" stroke="#7a4838" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M152 88 Q145 70 144 58" stroke="#7a4838" stroke-width="1" stroke-linecap="round"/>
+      <!-- Цветок 1 — большой (103,114) -->
+      <g transform="translate(103,114)">
+        <path d="M0 0 C-7-4-10-18 0-24 C10-18 7-4 0 0" fill="#fdd0de" transform="rotate(0)"/>
+        <path d="M0 0 C-7-4-10-18 0-24 C10-18 7-4 0 0" fill="#fbbece" transform="rotate(72)"/>
+        <path d="M0 0 C-7-4-10-18 0-24 C10-18 7-4 0 0" fill="#fdd0de" transform="rotate(144)"/>
+        <path d="M0 0 C-7-4-10-18 0-24 C10-18 7-4 0 0" fill="#fbbece" transform="rotate(216)"/>
+        <path d="M0 0 C-7-4-10-18 0-24 C10-18 7-4 0 0" fill="#fdd0de" transform="rotate(288)"/>
+        <circle r="4.5" fill="#e888a8"/>
+        <line x1="0" y1="-4" x2="0" y2="-10" stroke="#c05878" stroke-width="0.8"/><circle cx="0" cy="-10" r="1.1" fill="#c05878"/>
+        <line x1="0" y1="-4" x2="4" y2="-9" stroke="#c05878" stroke-width="0.8"/><circle cx="4" cy="-9" r="1.1" fill="#c05878"/>
+        <line x1="0" y1="-4" x2="-4" y2="-9" stroke="#c05878" stroke-width="0.8"/><circle cx="-4" cy="-9" r="1.1" fill="#c05878"/>
+        <line x1="0" y1="-4" x2="2" y2="-10" stroke="#c05878" stroke-width="0.7"/><circle cx="2" cy="-10" r="0.9" fill="#c05878"/>
+        <line x1="0" y1="-4" x2="-2" y2="-10" stroke="#c05878" stroke-width="0.7"/><circle cx="-2" cy="-10" r="0.9" fill="#c05878"/>
+      </g>
+      <!-- Цветок 2 — средний (157,70) -->
+      <g transform="translate(157,70)">
+        <path d="M0 0 C-5-3-8-15 0-20 C8-15 5-3 0 0" fill="#fce0ea" transform="rotate(15)"/>
+        <path d="M0 0 C-5-3-8-15 0-20 C8-15 5-3 0 0" fill="#fad2e2" transform="rotate(87)"/>
+        <path d="M0 0 C-5-3-8-15 0-20 C8-15 5-3 0 0" fill="#fce0ea" transform="rotate(159)"/>
+        <path d="M0 0 C-5-3-8-15 0-20 C8-15 5-3 0 0" fill="#fad2e2" transform="rotate(231)"/>
+        <path d="M0 0 C-5-3-8-15 0-20 C8-15 5-3 0 0" fill="#fce0ea" transform="rotate(303)"/>
+        <circle r="3.5" fill="#e880a0"/>
+        <line x1="0" y1="-3" x2="0" y2="-8" stroke="#c05070" stroke-width="0.7"/><circle cx="0" cy="-8" r="1" fill="#c05070"/>
+        <line x1="0" y1="-3" x2="3" y2="-7" stroke="#c05070" stroke-width="0.7"/><circle cx="3" cy="-7" r="1" fill="#c05070"/>
+        <line x1="0" y1="-3" x2="-3" y2="-7" stroke="#c05070" stroke-width="0.7"/><circle cx="-3" cy="-7" r="1" fill="#c05070"/>
+      </g>
+      <!-- Цветок 3 — маленький (194,46) -->
+      <g transform="translate(194,46)">
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fde8f0" transform="rotate(36)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fbdcea" transform="rotate(108)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fde8f0" transform="rotate(180)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fbdcea" transform="rotate(252)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fde8f0" transform="rotate(324)"/>
+        <circle r="2.8" fill="#e888a4"/>
+      </g>
+      <!-- Цветок 4 (220,34) -->
+      <g transform="translate(220,34)">
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fce4ed" transform="rotate(0)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fad8e8" transform="rotate(72)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fce4ed" transform="rotate(144)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fad8e8" transform="rotate(216)"/>
+        <path d="M0 0 C-4-2-6-12 0-16 C6-12 4-2 0 0" fill="#fce4ed" transform="rotate(288)"/>
+        <circle r="2.5" fill="#e880a0"/>
+        <line x1="0" y1="-2" x2="0" y2="-6" stroke="#c05070" stroke-width="0.6"/><circle cx="0" cy="-6" r="0.8" fill="#c05070"/>
+        <line x1="0" y1="-2" x2="2" y2="-5" stroke="#c05070" stroke-width="0.6"/><circle cx="2" cy="-5" r="0.8" fill="#c05070"/>
+        <line x1="0" y1="-2" x2="-2" y2="-5" stroke="#c05070" stroke-width="0.6"/><circle cx="-2" cy="-5" r="0.8" fill="#c05070"/>
+      </g>
+      <!-- Бутон (145,56) -->
+      <g transform="translate(145,56)">
+        <path d="M0-10 C-5-7-5 0 0 2 C5 0 5-7 0-10 Z" fill="#f0a8c4" stroke="#d07898" stroke-width="0.5"/>
+        <line x1="0" y1="2" x2="0" y2="8" stroke="#7a4838" stroke-width="1"/>
+      </g>
+      <!-- рассеянные лепестки -->
+      <ellipse cx="76" cy="145" rx="5" ry="7" fill="#fdd0de" opacity="0.55" transform="rotate(30,76,145)"/>
+      <ellipse cx="138" cy="90" rx="4" ry="6" fill="#fbbece" opacity="0.45" transform="rotate(-25,138,90)"/>
+      <ellipse cx="178" cy="108" rx="3.5" ry="5" fill="#fde0ea" opacity="0.4" transform="rotate(50,178,108)"/>
+      <ellipse cx="244" cy="50" rx="4" ry="5.5" fill="#fcd8e6" opacity="0.35" transform="rotate(15,244,50)"/>
+    </svg>
+  </aside>
+
+  <main id="main">
+
+    <!-- View: ALL BATCHES -->
+    <div id="view-all" style="display:none">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title" id="allViewTitle">Все закупы</h1>
+          <div class="page-subtitle" id="allViewSubtitle">Сводная картина по всем партиям товара</div>
+        </div>
+        <div class="page-date">
+          сегодня<br>
+          <strong id="dateNow1"></strong>
+        </div>
+      </div>
+
+      <div class="summary" id="summaryAll"></div>
+
+      <div class="toolbar">
+        <span class="section-title" id="allViewSectionTitle">Партии</span>
+        <div class="actions">
+          <button class="btn primary" id="addBatchBtn2">＋ Новый закуп</button>
+        </div>
+      </div>
+
+      <div class="batch-grid" id="batchGrid"></div>
+    </div>
+
+    <!-- View: SINGLE BATCH -->
+    <div id="view-batch" style="display:none">
+      <div class="page-header">
+        <div style="flex: 1; min-width: 0;">
+          <input type="text" class="batch-name-input" id="batchTitle" placeholder="Название закупа">
+          <div class="page-subtitle" id="batchSub"></div>
+        </div>
+        <div>
+          <select id="batchStatus" class="batch-status draft">
+            <option value="draft">Черновик</option>
+            <option value="ordered">Заказан</option>
+            <option value="delivered">Получен</option>
+            <option value="sold">Продан</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config" id="config">
+        <div class="config-item">
+          <label>Курс юаня</label>
+          <div class="input-row">
+            <input type="number" id="rateCNY" value="13" step="0.1" min="1">
+            <span class="unit">⃀ / ¥</span>
+          </div>
+        </div>
+        <div class="config-item">
+          <label>Доставка из Китая</label>
+          <div class="input-row">
+            <input type="number" id="shipKG" value="220" step="10" min="0">
+            <span class="unit">⃀ / кг</span>
+          </div>
+        </div>
+        <div class="config-item">
+          <label>Множитель маржи</label>
+          <div class="input-row">
+            <input type="number" id="multiplier" value="3" step="0.1" min="1">
+            <span class="unit">×</span>
+          </div>
+        </div>
+        <div class="config-item">
+          <label>Расход на доставку</label>
+          <div class="input-row">
+            <input type="number" id="courierFee" value="100" step="10" min="0">
+            <span class="unit">⃀ за заказ</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary" id="summaryBatch"></div>
+
+      <div class="toolbar">
+        <span class="section-title">Товары в закупе</span>
+        <div class="actions">
+          <button class="btn ghost" id="duplicateBatchBtn">⎘ Дублировать</button>
+          <button class="btn ghost danger" id="deleteBatchBtn">Удалить закуп</button>
+          <button class="btn" id="exportBatchBtn">⤓ Экспорт</button>
+          <button class="btn primary" id="addProductBtn">＋ Добавить товар</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-scroll">
+          <table id="dataTable">
+            <thead>
+              <tr>
+                <th class="col-num">№</th>
+                <th class="col-name">Название</th>
+                <th>Цена PDD<span class="hint">в юанях ¥</span></th>
+                <th>Кол-во<span class="hint">шт. заказано</span></th>
+                <th>Вес ед.<span class="hint">кг с упак.</span></th>
+                <th>Маржа<span class="hint">множитель</span></th>
+                <th>Реклама<span class="hint">⃀ общий бюджет</span></th>
+                <th>Стоимость<span class="hint">за ед., ⃀</span></th>
+                <th>Доставка<span class="hint">за ед., ⃀</span></th>
+                <th>Курьер<span class="hint">средн., ⃀</span></th>
+                <th>Себест-сть<span class="hint">за ед., ⃀</span></th>
+                <th>Цена продажи<span class="hint">по формуле</span></th>
+                <th>Прибыль<span class="hint">с одной</span></th>
+                <th>ROI</th>
+                <th class="col-narrow">Продано<span class="hint">шт.</span></th>
+                <th class="col-narrow">Ост<span class="hint">шт.</span></th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+            <tfoot id="tfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Как считается</h3>
+        <div class="help-grid">
+          <div><strong>Стоимость товара</strong>цена ¥ × курс. За единицу.</div>
+          <div><strong>Доставка из Китая</strong>вес ед. × <code>220</code> сом. За каждую единицу товара.</div>
+          <div><strong>Расход на доставку</strong>фиксированный расход <code>100 сом</code> на каждый заказ (то, что мы доплачиваем курьерской службе).</div>
+          <div><strong>Реклама</strong>общий бюджет делится на количество товара, чтобы узнать стоимость на единицу.</div>
+          <div><strong>Себестоимость</strong>товар + доставка + расход на доставку + реклама за ед. Полная стоимость на одну единицу.</div>
+          <div><strong>Цена продажи</strong><code>(товар + доставка) × маржа + реклама за ед + расход на доставку</code></div>
+          <div><strong>Маржинальность</strong>можно указать свою маржу для каждого товара (по умолчанию <code>3×</code>).</div>
+          <div><strong>Прибыль</strong>цена продажи минус себестоимость на одну единицу.</div>
+          <div><strong>ROI</strong>прибыль ÷ себестоимость × 100%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: ORDERS -->
+    <div id="view-orders" style="display:none">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Заказы</h1>
+      <div class="page-subtitle">Подтверждение оплаты → блогер видит заказ</div>
+    </div>
+  </div>
+
+  <!-- Setup block (показывается если нет URL скрипта) -->
+  <div class="orders-script-setup" id="ordersSetup" style="display:none">
+    <strong>Вставь URL твоего Google Apps Script</strong><br>
+    Это тот же URL что в <code>GOOGLE_SCRIPT_URL</code> в <code>index.html</code>. Он нужен чтобы читать заказы и подтверждать оплату.
+    <input type="text" class="orders-script-input" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/...">
+    <div style="margin-top: 10px; display: flex; gap: 8px;">
+      <button class="btn primary" onclick="saveScriptUrl()">Сохранить и загрузить</button>
+      <button class="btn ghost" onclick="document.getElementById('ordersSetup').style.display='none'">Отмена</button>
+    </div>
+    <div style="margin-top: 14px; font-size: 12px; color: var(--ink-3); line-height: 1.6;">
+      <strong style="color: var(--ink);">Также нужно обновить Google Apps Script</strong> — добавить:<br>
+      • <code>doGet?action=all_orders</code> — возвращает все заказы<br>
+      • <code>doPost action=confirm</code> — меняет статус на «Оплачен»<br>
+      Готовый код есть в описании проекта.
+    </div>
+  </div>
+
+  <div id="ordersError" class="orders-error" style="display:none"></div>
+
+  <div class="orders-summary-strip" id="ordersSummary"></div>
+
+  <div class="orders-filter-bar">
+    <button class="orders-filter-btn active" data-ofilter="all" onclick="setOrderFilter('all', this)">Все</button>
+    <button class="orders-filter-btn" data-ofilter="new" onclick="setOrderFilter('new', this)">Новые</button>
+    <button class="orders-filter-btn" data-ofilter="paid" onclick="setOrderFilter('paid', this)">Оплачены</button>
+    <button class="orders-filter-btn" data-ofilter="preorder" onclick="setOrderFilter('preorder', this)">Предзаказы</button>
+    <button class="orders-refresh-btn" onclick="loadOrders()">
+      <span id="refreshSpinner">↻</span> Обновить
+    </button>
+    <button class="orders-refresh-btn" onclick="document.getElementById('ordersSetup').style.display='block'" style="margin-left:4px; font-size:11.5px; color: var(--ink-3);">⚙ URL скрипта</button>
+  </div>
+
+  <div class="orders-list" id="ordersList">
+    <div class="orders-empty">
+      <div class="orders-empty-icon">📦</div>
+      <div style="font-size: 14px; color: var(--ink-2); margin-bottom: 6px;">Заказы ещё не загружены</div>
+      <div style="font-size: 12.5px;">Нажми «Обновить» чтобы загрузить</div>
+    </div>
+  </div>
+    </div><!-- /view-orders -->
+
+  </main>
+</div><!-- /app -->
+
+<!-- Hidden file input for import -->
+<input type="file" id="importFileInput" accept=".json" style="display:none;">
+
+<!-- MODAL: New batch -->
+<div class="modal-backdrop" id="modalNewBatch">
+  <div class="modal">
+    <h3>Новый закуп</h3>
+    <p>Каждый закуп — отдельная партия товара со своими настройками и таблицей.</p>
+    <div class="modal-field">
+      <label>Название</label>
+      <input type="text" id="newBatchName" placeholder="Например: Закуп #5 — летние товары">
+    </div>
+    <div class="modal-field">
+      <label>Месяц</label>
+      <select id="newBatchMonth"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-modal-close>Отмена</button>
+      <button class="btn primary" id="createBatchBtn">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Copy/Move product -->
+<div class="modal-backdrop" id="modalCopyProduct">
+  <div class="modal">
+    <h3>Скопировать товар</h3>
+    <p>Выбери закуп и нажми «Скопировать» или «Переместить».</p>
+    <div class="modal-batch-list" id="copyBatchList"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-modal-close>Отмена</button>
+      <button class="btn" id="copyProductBtn">⎘ Скопировать</button>
+      <button class="btn primary" id="moveProductBtn">→ Переместить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Install info -->
+<div class="modal-backdrop" id="modalInstall">
+  <div class="modal">
+    <h3>Сохранить как приложение</h3>
+    <p>Чтобы открывать Unit одним кликом с рабочего стола:</p>
+    <div style="font-size: 13px; color: var(--ink-2); line-height: 1.7; background: var(--bg-2); padding: 14px 16px; border-radius: 8px; margin-bottom: 16px;">
+      <strong style="color: var(--ink);">В Chrome или Edge:</strong><br>
+      1. Меню <code style="background: var(--panel); padding: 1px 6px; border-radius: 4px; color: var(--accent);">⋮</code> в правом верхнем углу<br>
+      2. <em>Сохранить и поделиться → Установить страницу как приложение</em><br>
+      3. Иконка появится на рабочем столе
+    </div>
+    <p style="font-size: 12px; color: var(--ink-3);">Все данные сохраняются в твоём браузере автоматически.</p>
+    <div class="modal-actions">
+      <button class="btn primary" data-modal-close>Понятно</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'pdd_unit_v2';
+
+  const DEFAULT_CONFIG = {
+    rateCNY: 13,
+    shipKG: 220,
+    multiplier: 3,
+    courierFee: 100
+  };
+
+  let state = {
+    batches: [],
+    activeView: 'all',
+    statusFilter: 'all'
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => {
+    if (!isFinite(n) || n === 0) return '0';
+    return Math.round(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+  };
+  const fmtSom = (n) => fmt(n) + ' ⃀';
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.warn(e); }
+  }
+
+  function load() {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed.batches) state = parsed;
+      }
+    } catch (e) { console.warn(e); }
+  }
+
+  function calcProduct(p, config) {
+    const cny = parseFloat(p.priceCNY) || 0;
+    const qty = parseFloat(p.quantity) || 1;
+    const weight = parseFloat(p.weight) || 0;
+    const adBudget = parseFloat(p.adBudget) || 0;
+    const productMargin = parseFloat(p.margin) || parseFloat(config.multiplier) || 3;
+
+    const rate = parseFloat(config.rateCNY) || 13;
+    const shipRate = parseFloat(config.shipKG) || 250;
+    const mult = productMargin;
+    const courierFee = parseFloat(config.courierFee) || 100;
+
+    const itemCostUnit = cny * rate;
+    const shippingUnit = weight * shipRate;
+    const courierAvg = courierFee;
+    const adPerUnit = adBudget / qty;
+
+    const baseUnit = itemCostUnit + shippingUnit;
+    const totalUnit = itemCostUnit + shippingUnit + courierAvg + adPerUnit;
+    const sellPrice = baseUnit * mult + adPerUnit + courierAvg;
+    const netProfit = sellPrice - totalUnit;
+    const roi = totalUnit > 0 ? (netProfit / totalUnit * 100) : 0;
+
+    return {
+      itemCostUnit, shippingUnit, courierAvg,
+      totalUnit, sellPrice, netProfit, roi, qty,
+      itemCostTotal: itemCostUnit * qty,
+      shippingTotal: shippingUnit * qty,
+      courierTotal: courierAvg * qty,
+      adTotal: adBudget,
+      adPerUnit,
+      totalCostFull: itemCostUnit * qty + shippingUnit * qty + courierAvg * qty + adBudget,
+      revenueTotal: sellPrice * qty,
+      profitTotal: netProfit * qty
+    };
+  }
+
+  function calcBatch(batch) {
+    const config = batch.config || DEFAULT_CONFIG;
+    let itemCost = 0, shipping = 0, courier = 0, ads = 0, revenue = 0, totalWeight = 0;
+    (batch.products || []).forEach(p => {
+      const c = calcProduct(p, config);
+      itemCost += c.itemCostTotal;
+      shipping += c.shippingTotal;
+      courier += c.courierTotal;
+      ads += parseFloat(p.adBudget) || 0;
+      revenue += c.revenueTotal;
+      totalWeight += (parseFloat(p.weight) || 0) * (parseFloat(p.quantity) || 1);
+    });
+    const totalCost = itemCost + shipping + courier + ads;
+    const profit = revenue - totalCost;
+    const roi = totalCost > 0 ? (profit / totalCost * 100) : 0;
+    return { itemCost, shipping, courier, ads, totalCost, revenue, profit, roi, totalWeight };
+  }
+
+  function createBatch(name, monthIdx) {
+    const now = new Date();
+    const batch = {
+      id: uid(),
+      name: name || `Закуп — ${MONTHS[now.getMonth()]} ${now.getFullYear()}`,
+      month: monthIdx ?? now.getMonth(),
+      year: now.getFullYear(),
+      status: 'draft',
+      createdAt: now.toISOString(),
+      config: { ...DEFAULT_CONFIG },
+      products: []
+    };
+    state.batches.unshift(batch);
+    save();
+    return batch;
+  }
+
+  function deleteBatch(id) {
+    state.batches = state.batches.filter(b => b.id !== id);
+    save();
+  }
+
+  function duplicateBatch(id) {
+    const orig = state.batches.find(b => b.id === id);
+    if (!orig) return null;
+    const copy = JSON.parse(JSON.stringify(orig));
+    copy.id = uid();
+    copy.name = orig.name + ' (копия)';
+    copy.createdAt = new Date().toISOString();
+    copy.products.forEach(p => p.id = uid());
+    state.batches.unshift(copy);
+    save();
+    return copy;
+  }
+
+  function getActiveBatch() {
+    if (state.activeView === 'all') return null;
+    return state.batches.find(b => b.id === state.activeView);
+  }
+
+  function pluralize(n, forms) {
+    n = Math.abs(n) % 100;
+    const n1 = n % 10;
+    if (n > 10 && n < 20) return forms[2];
+    if (n1 > 1 && n1 < 5) return forms[1];
+    if (n1 === 1) return forms[0];
+    return forms[2];
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, m => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  function formatDate(iso) {
+    try {
+      const d = new Date(iso);
+      return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+    } catch { return ''; }
+  }
+
+  function renderSidebar() {
+    const grouped = {};
+    state.batches.forEach(b => {
+      const key = `${b.year}-${String(b.month).padStart(2,'0')}`;
+      if (!grouped[key]) grouped[key] = { year: b.year, month: b.month, items: [] };
+      grouped[key].items.push(b);
+    });
+    const sortedKeys = Object.keys(grouped).sort().reverse();
+
+    const list = $('batchList');
+    if (sortedKeys.length === 0) {
+      list.innerHTML = `<div style="padding: 12px; color: var(--ink-faint); font-size: 12px; font-style: italic;">Нажми + чтобы создать закуп</div>`;
+    } else {
+      list.innerHTML = sortedKeys.map(key => {
+        const g = grouped[key];
+        return `
+          <div class="month-label">${MONTHS[g.month]} ${g.year}</div>
+          ${g.items.map(b => `
+            <button class="nav-item ${state.activeView === b.id ? 'active' : ''}" data-view="${b.id}">
+              <span class="label">${escapeHtml(b.name)}</span>
+              <span class="count">${(b.products || []).length}</span>
+            </button>
+          `).join('')}
+        `;
+      }).join('');
+    }
+
+    $('allCount').textContent = state.batches.length;
+    $('draftCount').textContent = state.batches.filter(b => (b.status || 'draft') === 'draft').length;
+    $('orderedCount').textContent = state.batches.filter(b => b.status === 'ordered').length;
+    $('deliveredCount').textContent = state.batches.filter(b => b.status === 'delivered').length;
+    $('soldCount').textContent = state.batches.filter(b => b.status === 'sold').length;
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(el => {
+      if (el.dataset.filter !== undefined) {
+        el.classList.toggle('active',
+          state.activeView === 'all' && el.dataset.filter === state.statusFilter
+        );
+      } else {
+        el.classList.toggle('active', el.dataset.view === state.activeView);
+      }
+    });
+  }
+
+  const STATUS_LABELS = { all: 'Все закупы', draft: 'Черновики', ordered: 'Заказаны', delivered: 'Получены', sold: 'Проданы' };
+  const STATUS_SUBTITLES = {
+    all: 'Сводная картина по всем партиям товара',
+    draft: 'Закупы в стадии планирования',
+    ordered: 'Товар заказан, ожидается доставка из Китая',
+    delivered: 'Товар получен, идёт продажа',
+    sold: 'Закупы полностью реализованы'
+  };
+
+  function renderAllView() {
+    const filter = state.statusFilter || 'all';
+    const filtered = filter === 'all'
+      ? state.batches
+      : state.batches.filter(b => (b.status || 'draft') === filter);
+
+    $('allViewTitle').textContent = STATUS_LABELS[filter] || 'Все закупы';
+    $('allViewSubtitle').textContent = STATUS_SUBTITLES[filter] || '';
+    $('allViewSectionTitle').textContent = 'Партии · ' + (STATUS_LABELS[filter] || 'Все');
+
+    let totalCost = 0, totalRevenue = 0, totalProfit = 0, totalProducts = 0;
+    filtered.forEach(b => {
+      const c = calcBatch(b);
+      totalCost += c.totalCost;
+      totalRevenue += c.revenue;
+      totalProfit += c.profit;
+      totalProducts += (b.products || []).length;
+    });
+    const totalROI = totalCost > 0 ? (totalProfit / totalCost * 100) : 0;
+
+    $('summaryAll').innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Закупов</div>
+        <div class="stat-value">${filtered.length}</div>
+        <div class="stat-sub">${totalProducts} товар${pluralize(totalProducts, ['', 'а', 'ов'])}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Себестоимость</div>
+        <div class="stat-value">${fmtSom(totalCost)}</div>
+        <div class="stat-sub">по выбранным партиям</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Выручка по плану</div>
+        <div class="stat-value">${fmtSom(totalRevenue)}</div>
+        <div class="stat-sub">если всё продастся</div>
+      </div>
+      <div class="stat feature">
+        <div class="stat-label">Чистая прибыль</div>
+        <div class="stat-value">${fmtSom(totalProfit)}</div>
+        <div class="stat-sub ${totalProfit >= 0 ? 'pos' : 'neg'}">ROI · ${totalROI.toFixed(0)}%</div>
+      </div>
+    `;
+
+    const grid = $('batchGrid');
+    if (filtered.length === 0) {
+      const emptyMsg = filter === 'all'
+        ? 'Пока нет ни одного закупа'
+        : `Нет закупов со статусом «${STATUS_LABELS[filter]}»`;
+      grid.innerHTML = `
+        <div class="batch-card" style="grid-column: 1 / -1; text-align: center; cursor: default;">
+          <div class="empty-icon" style="margin: 0 auto;">∽</div>
+          <div class="empty-text">${emptyMsg}</div>
+          <div class="empty-sub">Создай новый закуп или смени фильтр</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(b => {
+      const c = calcBatch(b);
+      const statusLabel = { draft: 'Черновик', ordered: 'Заказан', delivered: 'Получен', sold: 'Продан' }[b.status] || 'Черновик';
+      const profitClass = c.profit > 0 ? 'pos' : (c.profit < 0 ? 'neg' : '');
+      return `
+        <div class="batch-card" data-view="${b.id}">
+          <div class="batch-card-head">
+            <div>
+              <div class="batch-card-name">${escapeHtml(b.name)}</div>
+              <div style="font-size: 11px; color: var(--ink-3); margin-top: 4px;">
+                ${MONTHS[b.month]} ${b.year} · ${(b.products || []).length} товар${pluralize((b.products || []).length, ['', 'а', 'ов'])}
+              </div>
+            </div>
+            <span class="batch-status ${b.status || 'draft'}">${statusLabel}</span>
+          </div>
+          <div class="batch-card-stats">
+            <div class="batch-card-stat">
+              <span class="batch-card-stat-label">Вложено</span>
+              <span class="batch-card-stat-value">${fmtSom(c.totalCost)}</span>
+            </div>
+            <div class="batch-card-stat">
+              <span class="batch-card-stat-label">Выручка</span>
+              <span class="batch-card-stat-value">${fmtSom(c.revenue)}</span>
+            </div>
+            <div class="batch-card-stat">
+              <span class="batch-card-stat-label">Прибыль</span>
+              <span class="batch-card-stat-value ${profitClass}">${fmtSom(c.profit)}</span>
+            </div>
+            <div class="batch-card-stat">
+              <span class="batch-card-stat-label">ROI</span>
+              <span class="batch-card-stat-value ${profitClass}">${c.roi.toFixed(0)}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderBatchView() {
+    const batch = getActiveBatch();
+    if (!batch) return;
+
+    $('batchTitle').value = batch.name;
+    $('batchStatus').value = batch.status || 'draft';
+    $('batchStatus').className = 'batch-status ' + (batch.status || 'draft');
+    $('batchSub').textContent = `${MONTHS[batch.month]} ${batch.year} · создан ${formatDate(batch.createdAt)}`;
+
+    const cfg = batch.config || DEFAULT_CONFIG;
+    $('rateCNY').value = cfg.rateCNY;
+    $('shipKG').value = cfg.shipKG;
+    $('multiplier').value = cfg.multiplier;
+    $('courierFee').value = cfg.courierFee;
+
+    renderBatchSummary(batch);
+    renderTable(batch);
+  }
+
+  function renderBatchSummary(batch) {
+    const c = calcBatch(batch);
+    const totalCostWithShipping = c.itemCost + c.shipping;
+
+    $('summaryBatch').innerHTML = `
+      <div class="stat">
+        <div class="stat-label">Товаров</div>
+        <div class="stat-value">${(batch.products || []).length}</div>
+        <div class="stat-sub">в этом закупе</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Товар + Доставка</div>
+        <div class="stat-value">${fmtSom(totalCostWithShipping)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Себестоимость</div>
+        <div class="stat-value">${fmtSom(c.totalCost)}</div>
+        <div class="stat-sub">всё включено</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Бюджет рекламы</div>
+        <div class="stat-value">${fmtSom(c.ads)}</div>
+        <div class="stat-sub">на все товары</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Выручка по плану</div>
+        <div class="stat-value">${fmtSom(c.revenue)}</div>
+        <div class="stat-sub">если всё продастся</div>
+      </div>
+      <div class="stat feature">
+        <div class="stat-label">Прибыль</div>
+        <div class="stat-value">${fmtSom(c.profit)}</div>
+        <div class="stat-sub ${c.profit >= 0 ? 'pos' : 'neg'}">ROI · ${c.roi.toFixed(0)}%</div>
+      </div>
+    `;
+  }
+
+  function renderTable(batch) {
+    const tbody = $('rows');
+    const tfoot = $('tfoot');
+    const products = batch.products || [];
+    const config = batch.config || DEFAULT_CONFIG;
+
+    if (products.length === 0) {
+      tbody.innerHTML = `
+        <tr><td colspan="17" class="empty">
+          <div class="empty-icon">⌒</div>
+          <div class="empty-text">Пока пусто</div>
+          <div class="empty-sub">Нажми «＋ Добавить товар» чтобы начать</div>
+        </td></tr>`;
+      tfoot.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = products.map((p, i) => {
+      const c = calcProduct(p, config);
+      const profitClass = c.netProfit >= 0 ? 'profit' : 'danger';
+      const sold = parseFloat(p.sold) || 0;
+      const remaining = (parseFloat(p.quantity) || 1) - sold;
+      return `
+        <tr data-id="${p.id}" draggable="true">
+          <td class="col-num">${String(i + 1).padStart(2, '0')}</td>
+          <td class="col-name"><input class="cell-input name" data-field="name" value="${escapeHtml(p.name || '')}" placeholder="название товара"></td>
+          <td><input class="cell-input" type="number" data-field="priceCNY" value="${p.priceCNY ?? ''}" step="0.01" placeholder="0"></td>
+          <td><input class="cell-input" type="number" data-field="quantity" value="${p.quantity ?? 1}" step="1" min="1" placeholder="1"></td>
+          <td><input class="cell-input" type="number" data-field="weight" value="${p.weight ?? ''}" step="0.01" placeholder="0"></td>
+          <td><input class="cell-input" type="number" data-field="margin" value="${p.margin ?? config.multiplier ?? 3}" step="0.1" min="1" placeholder="3"></td>
+          <td><input class="cell-input" type="number" data-field="adBudget" value="${p.adBudget ?? ''}" step="50" placeholder="0"></td>
+          <td class="calc">${fmtSom(c.itemCostUnit)}</td>
+          <td class="calc">${fmtSom(c.shippingUnit)}</td>
+          <td class="calc">${fmtSom(c.courierAvg)}</td>
+          <td class="calc strong">${fmtSom(c.totalUnit)}</td>
+          <td class="calc strong">${fmtSom(c.sellPrice)}</td>
+          <td class="calc ${profitClass}">${fmtSom(c.netProfit)}</td>
+          <td class="calc ${profitClass}">${c.roi.toFixed(0)}%</td>
+          <td class="col-narrow"><input class="cell-input" type="number" data-field="sold" value="${p.sold ?? ''}" step="1" min="0" placeholder="0"></td>
+          <td class="calc col-narrow">${remaining}</td>
+          <td class="col-action"><button class="del-btn" data-action="delete" title="Удалить">×</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    const cb = calcBatch(batch);
+    const profitTotalClass = cb.profit >= 0 ? 'profit-total' : 'danger-total';
+    tfoot.innerHTML = `
+      <tr>
+        <td colspan="4" class="label-cell">Итого по закупу</td>
+        <td class="calc"><strong>${cb.totalWeight.toFixed(2)} кг</strong></td>
+        <td></td>
+        <td class="calc"><strong>${fmtSom(cb.ads)}</strong></td>
+        <td>${fmtSom(cb.itemCost)}</td>
+        <td>${fmtSom(cb.shipping)}</td>
+        <td>${fmtSom(cb.courier)}</td>
+        <td>${fmtSom(cb.totalCost)}</td>
+        <td>${fmtSom(cb.revenue)}</td>
+        <td class="${profitTotalClass}">${fmtSom(cb.profit)}</td>
+        <td class="${profitTotalClass}">${cb.roi.toFixed(0)}%</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    `;
+  }
+
+  function switchView(viewId, filter) {
+    // Handle orders view
+    const ordersEl = $('view-orders');
+    if (viewId === 'orders') {
+      state.activeView = 'orders';
+      save();
+      if (ordersEl) ordersEl.style.display = 'block';
+      $('view-all').style.display = 'none';
+      $('view-batch').style.display = 'none';
+      renderSidebar();
+      $('sidebar').classList.remove('open');
+      if (allOrders.length === 0) loadOrders();
+      return;
+    }
+    if (ordersEl) ordersEl.style.display = 'none';
+
+    state.activeView = viewId;
+    if (filter !== undefined) state.statusFilter = filter;
+    save();
+    renderSidebar();
+
+    if (viewId === 'all') {
+      $('view-all').style.display = 'block';
+      $('view-batch').style.display = 'none';
+      renderAllView();
+    } else {
+      const batch = state.batches.find(b => b.id === viewId);
+      if (!batch) {
+        switchView('all');
+        return;
+      }
+      $('view-all').style.display = 'none';
+      $('view-batch').style.display = 'block';
+      renderBatchView();
+    }
+    $('sidebar').classList.remove('open');
+  }
+
+  function addProductToActive() {
+    const batch = getActiveBatch();
+    if (!batch) return;
+    batch.products = batch.products || [];
+    batch.products.push({
+      id: uid(),
+      name: '',
+      priceCNY: '',
+      quantity: 1,
+      weight: '',
+      margin: batch.config?.multiplier || 3,
+      adBudget: '',
+      sold: 0
+    });
+    save();
+    renderBatchView();
+    renderSidebar();
+    setTimeout(() => {
+      const rows = document.querySelectorAll('#rows tr');
+      const last = rows[rows.length - 1];
+      if (last) {
+        const inp = last.querySelector('input[data-field="name"]');
+        if (inp) inp.focus();
+      }
+    }, 50);
+  }
+
+  function deleteProduct(id) {
+    const batch = getActiveBatch();
+    if (!batch) return;
+    batch.products = (batch.products || []).filter(p => p.id !== id);
+    save();
+    renderBatchView();
+    renderSidebar();
+  }
+
+  function exportCSV(batch) {
+    const config = batch.config || DEFAULT_CONFIG;
+    const headers = ['№','Название','Цена ¥','Кол-во','Вес кг','Реклама ⃀','Стоимость ⃀','Доставка ⃀','Курьер ⃀','Себест-сть ед. ⃀','Цена продажи ⃀','Прибыль ед. ⃀','ROI %'];
+    const rows = (batch.products || []).map((p, i) => {
+      const c = calcProduct(p, config);
+      return [
+        i + 1,
+        '"' + (p.name || '').replace(/"/g, '""') + '"',
+        p.priceCNY || 0,
+        p.quantity || 1,
+        p.weight || 0,
+        p.adBudget || 0,
+        Math.round(c.itemCostUnit),
+        Math.round(c.shippingUnit),
+        Math.round(c.courierAvg),
+        Math.round(c.totalUnit),
+        Math.round(c.sellPrice),
+        Math.round(c.netProfit),
+        c.roi.toFixed(1)
+      ].join(';');
+    });
+    const csv = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = (batch.name || 'batch').replace(/[^\wа-яА-ЯёЁ-]+/g, '_').slice(0, 40);
+    a.download = `${safeName}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAllCSV() {
+    if (state.batches.length === 0) {
+      alert('Нет данных для экспорта');
+      return;
+    }
+    const headers = ['Закуп','Месяц','Статус','№','Название','Цена ¥','Кол-во','Вес кг','Реклама ⃀','Себест-сть ед. ⃀','Цена продажи ⃀','Прибыль ед. ⃀','ROI %'];
+    const allRows = [];
+    state.batches.forEach(batch => {
+      const config = batch.config || DEFAULT_CONFIG;
+      const monthLabel = `${MONTHS[batch.month]} ${batch.year}`;
+      (batch.products || []).forEach((p, i) => {
+        const c = calcProduct(p, config);
+        allRows.push([
+          '"' + (batch.name || '').replace(/"/g, '""') + '"',
+          monthLabel,
+          batch.status || 'draft',
+          i + 1,
+          '"' + (p.name || '').replace(/"/g, '""') + '"',
+          p.priceCNY || 0,
+          p.quantity || 1,
+          p.weight || 0,
+          p.adBudget || 0,
+          Math.round(c.totalUnit),
+          Math.round(c.sellPrice),
+          Math.round(c.netProfit),
+          c.roi.toFixed(1)
+        ].join(';'));
+      });
+    });
+    const csv = '\uFEFF' + [headers.join(';'), ...allRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `unit_все_закупы_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAllData() {
+    const dataToExport = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      data: state
+    };
+    const json = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `unit_данные_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importAllData() {
+    const fileInput = $('importFileInput');
+    fileInput.click();
+  }
+
+  let copyState = { productId: null, sourceBatchId: null, targetBatchId: null };
+
+  function openCopyModal(productId) {
+    const batch = getActiveBatch();
+    if (!batch) return;
+    copyState.productId = productId;
+    copyState.sourceBatchId = batch.id;
+    copyState.targetBatchId = null;
+
+    const others = state.batches.filter(b => b.id !== batch.id);
+    const listEl = $('copyBatchList');
+
+    if (others.length === 0) {
+      listEl.innerHTML = `<div style="padding:16px;text-align:center;color:var(--ink-3);font-size:13px;">Нет других закупов</div>`;
+    } else {
+      listEl.innerHTML = others.map(b => `
+        <div class="modal-batch-item" data-batch-id="${b.id}">
+          <div class="modal-batch-item-name">${escapeHtml(b.name)}</div>
+          <div class="modal-batch-item-sub">${MONTHS[b.month]} ${b.year} · ${(b.products||[]).length} товар${pluralize((b.products||[]).length,['','а','ов'])}</div>
+        </div>
+      `).join('');
+    }
+    $('modalCopyProduct').classList.add('show');
+  }
+
+  function doCopyMove(move) {
+    if (!copyState.targetBatchId) { alert('Выбери закуп из списка'); return; }
+    const src = state.batches.find(b => b.id === copyState.sourceBatchId);
+    const dst = state.batches.find(b => b.id === copyState.targetBatchId);
+    if (!src || !dst) return;
+    const product = (src.products || []).find(p => p.id === copyState.productId);
+    if (!product) return;
+    const clone = { ...JSON.parse(JSON.stringify(product)), id: uid() };
+    dst.products = dst.products || [];
+    dst.products.push(clone);
+    if (move) src.products = src.products.filter(p => p.id !== copyState.productId);
+    save();
+    $('modalCopyProduct').classList.remove('show');
+    renderBatchView();
+    renderSidebar();
+  }
+
+  function bindEvents() {
+    document.addEventListener('click', (e) => {
+      const navItem = e.target.closest('.nav-item[data-view]');
+      if (navItem) {
+        const filter = navItem.dataset.filter;
+        switchView(navItem.dataset.view, filter);
+        return;
+      }
+
+      const card = e.target.closest('.batch-card[data-view]');
+      if (card) { switchView(card.dataset.view); return; }
+
+      if (e.target.matches('[data-modal-close]') ||
+          (e.target.classList.contains('modal-backdrop') && !e.target.closest('.modal'))) {
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show'));
+      }
+    });
+
+    $('mobileToggle').addEventListener('click', () => {
+      $('sidebar').classList.toggle('open');
+    });
+
+    const openNewBatch = () => {
+      const sel = $('newBatchMonth');
+      sel.innerHTML = MONTHS.map((m, i) =>
+        `<option value="${i}" ${i === new Date().getMonth() ? 'selected' : ''}>${m}</option>`
+      ).join('');
+      $('newBatchName').value = '';
+      $('modalNewBatch').classList.add('show');
+      setTimeout(() => $('newBatchName').focus(), 50);
+    };
+    $('addBatchBtn').addEventListener('click', openNewBatch);
+    $('addBatchBtn2').addEventListener('click', openNewBatch);
+
+    $('createBatchBtn').addEventListener('click', () => {
+      const name = $('newBatchName').value.trim();
+      const monthIdx = parseInt($('newBatchMonth').value);
+      const finalName = name || `Закуп — ${MONTHS[monthIdx]} ${new Date().getFullYear()}`;
+      const batch = createBatch(finalName, monthIdx);
+      $('modalNewBatch').classList.remove('show');
+      switchView(batch.id);
+    });
+    $('newBatchName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('createBatchBtn').click();
+    });
+
+    $('batchTitle').addEventListener('input', (e) => {
+      const batch = getActiveBatch();
+      if (!batch) return;
+      batch.name = e.target.value;
+      save();
+      renderSidebar();
+    });
+
+    $('batchStatus').addEventListener('change', (e) => {
+      const batch = getActiveBatch();
+      if (!batch) return;
+      batch.status = e.target.value;
+      $('batchStatus').className = 'batch-status ' + e.target.value;
+      save();
+      renderSidebar();
+    });
+
+    document.querySelectorAll('#config input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const batch = getActiveBatch();
+        if (!batch) return;
+        batch.config = batch.config || { ...DEFAULT_CONFIG };
+        batch.config[e.target.id] = parseFloat(e.target.value) || 0;
+        save();
+        renderBatchSummary(batch);
+        renderTable(batch);
+        renderSidebar();
+      });
+    });
+
+    // Use change event for table inputs to avoid disrupting typing
+    $('rows').addEventListener('input', (e) => {
+      if (!e.target.matches('.cell-input')) return;
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const batch = getActiveBatch();
+      if (!batch) return;
+      const product = (batch.products || []).find(p => p.id === tr.dataset.id);
+      if (!product) return;
+      product[e.target.dataset.field] = e.target.value;
+      save();
+      // Update only this row's calculated cells, footer, summary — no full re-render
+      updateRowCalc(tr, product, batch.config || DEFAULT_CONFIG);
+      updateFooter(batch);
+      renderBatchSummary(batch);
+      renderSidebar();
+    });
+
+    $('rows').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-action="delete"]');
+      if (delBtn) {
+        const tr = delBtn.closest('tr');
+        if (tr && confirm('Удалить этот товар?')) deleteProduct(tr.dataset.id);
+        return;
+      }
+      const copyBtn = e.target.closest('[data-action="copy"]');
+      if (copyBtn) {
+        const tr = copyBtn.closest('tr');
+        if (tr) openCopyModal(tr.dataset.id);
+      }
+    });
+
+    $('copyBatchList').addEventListener('click', (e) => {
+      const item = e.target.closest('.modal-batch-item');
+      if (!item) return;
+      document.querySelectorAll('.modal-batch-item').forEach(el => el.classList.remove('selected'));
+      item.classList.add('selected');
+      copyState.targetBatchId = item.dataset.batchId;
+    });
+
+    $('copyProductBtn').addEventListener('click', () => doCopyMove(false));
+    $('moveProductBtn').addEventListener('click', () => doCopyMove(true));
+
+    // ---- DRAG & DROP row → sidebar batch ----
+    $('rows').addEventListener('dragstart', (e) => {
+      const tr = e.target.closest('tr[data-id]');
+      if (!tr) return;
+      e.dataTransfer.setData('text/plain', tr.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => tr.classList.add('dragging'), 0);
+    });
+
+    $('rows').addEventListener('dragend', (e) => {
+      const tr = e.target.closest('tr[data-id]');
+      if (tr) tr.classList.remove('dragging');
+      document.querySelectorAll('.nav-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    $('sidebar').addEventListener('dragover', (e) => {
+      const item = e.target.closest('.nav-item[data-view]');
+      if (!item || item.dataset.filter !== undefined) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.nav-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+
+    $('sidebar').addEventListener('dragleave', (e) => {
+      if (!$('sidebar').contains(e.relatedTarget)) {
+        document.querySelectorAll('.nav-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+      }
+    });
+
+    $('sidebar').addEventListener('drop', (e) => {
+      const item = e.target.closest('.nav-item[data-view]');
+      if (!item || item.dataset.filter !== undefined) return;
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const productId = e.dataTransfer.getData('text/plain');
+      const targetBatchId = item.dataset.view;
+      const srcBatch = getActiveBatch();
+      if (!srcBatch || srcBatch.id === targetBatchId) return;
+      const dstBatch = state.batches.find(b => b.id === targetBatchId);
+      if (!dstBatch) return;
+      const product = (srcBatch.products || []).find(p => p.id === productId);
+      if (!product) return;
+      const clone = { ...JSON.parse(JSON.stringify(product)), id: uid() };
+      dstBatch.products = dstBatch.products || [];
+      dstBatch.products.push(clone);
+      srcBatch.products = srcBatch.products.filter(p => p.id !== productId);
+      save();
+      renderBatchView();
+      renderSidebar();
+    });
+
+    $('addProductBtn').addEventListener('click', addProductToActive);
+
+    $('deleteBatchBtn').addEventListener('click', () => {
+      const batch = getActiveBatch();
+      if (!batch) return;
+      if (confirm(`Удалить закуп «${batch.name}»? Это действие нельзя отменить.`)) {
+        deleteBatch(batch.id);
+        switchView('all');
+      }
+    });
+
+    $('duplicateBatchBtn').addEventListener('click', () => {
+      const batch = getActiveBatch();
+      if (!batch) return;
+      const copy = duplicateBatch(batch.id);
+      if (copy) switchView(copy.id);
+    });
+
+    $('exportBatchBtn').addEventListener('click', () => {
+      const batch = getActiveBatch();
+      if (batch) exportCSV(batch);
+    });
+
+    $('exportAllBtn').addEventListener('click', exportAllCSV);
+    $('exportDataBtn').addEventListener('click', exportAllData);
+    $('importDataBtn').addEventListener('click', importAllData);
+
+    $('importFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (imported.data && imported.data.batches) {
+            state = imported.data;
+            save();
+            renderSidebar();
+            switchView('all');
+            alert('✅ Данные успешно загружены!');
+          } else {
+            alert('❌ Неверный формат файла');
+          }
+        } catch (err) {
+          alert('❌ Ошибка при загрузке файла: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    $('settingsBtn').addEventListener('click', () => {
+      $('modalInstall').classList.add('show');
+    });
+  }
+
+  // Update only calculated cells in a single row (preserves input focus & cursor)
+  function updateRowCalc(tr, product, config) {
+    const c = calcProduct(product, config);
+    const profitClass = c.netProfit >= 0 ? 'profit' : 'danger';
+    const calcCells = tr.querySelectorAll('td.calc');
+    if (calcCells.length < 8) return;
+    calcCells[0].textContent = fmtSom(c.itemCostUnit);
+    calcCells[1].textContent = fmtSom(c.shippingUnit);
+    calcCells[2].textContent = fmtSom(c.courierAvg);
+    calcCells[3].textContent = fmtSom(c.totalUnit);
+    calcCells[4].textContent = fmtSom(c.sellPrice);
+    calcCells[5].textContent = fmtSom(c.netProfit);
+    calcCells[5].className = 'calc ' + profitClass;
+    calcCells[6].textContent = c.roi.toFixed(0) + '%';
+    calcCells[6].className = 'calc ' + profitClass;
+    const sold = parseFloat(product.sold) || 0;
+    const qty = parseFloat(product.quantity) || 1;
+    calcCells[7].textContent = qty - sold;
+  }
+
+  function updateFooter(batch) {
+    const tfoot = $('tfoot');
+    const tr = tfoot.querySelector('tr');
+    if (!tr) return;
+    const cells = tr.querySelectorAll('td');
+    if (cells.length < 12) return;
+    const cb = calcBatch(batch);
+    const profitTotalClass = cb.profit >= 0 ? 'profit-total' : 'danger-total';
+    cells[1].textContent = cb.totalWeight.toFixed(2) + ' кг';
+    cells[3].innerHTML = '<strong>' + fmtSom(cb.ads) + '</strong>';
+    cells[4].textContent = fmtSom(cb.itemCost);
+    cells[5].textContent = fmtSom(cb.shipping);
+    cells[6].textContent = fmtSom(cb.courier);
+    cells[7].textContent = fmtSom(cb.totalCost);
+    cells[8].textContent = fmtSom(cb.revenue);
+    cells[9].textContent = fmtSom(cb.profit);
+    cells[9].className = profitTotalClass;
+    cells[10].textContent = cb.roi.toFixed(0) + '%';
+    cells[10].className = profitTotalClass;
+  }
+
+  function setupDates() {
+    const d = new Date();
+    const formatted = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+    if ($('dateNow1')) $('dateNow1').textContent = formatted;
+  }
+
+  function init() {
+    load();
+
+    if (state.batches.length === 0) {
+      const batch = createBatch('Пример — летние товары', new Date().getMonth());
+      batch.products.push({
+        id: uid(),
+        name: 'Мини-вентилятор',
+        priceCNY: 28,
+        quantity: 10,
+        weight: 0.4,
+        margin: 3,
+        adBudget: 800,
+        sold: 0
+      });
+      save();
+    }
+
+    bindEvents();
+    setupDates();
+    renderSidebar();
+
+    if (state.activeView !== 'all' && !state.batches.find(b => b.id === state.activeView)) {
+      state.activeView = 'all';
+    }
+    switchView(state.activeView);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  // ============= ORDERS MODULE =============
+  const SCRIPT_URL_KEY = 'pdd_script_url';
+  let allOrders = [];
+  let currentOrderFilter = 'all';
+
+  function getScriptUrl() {
+    return localStorage.getItem(SCRIPT_URL_KEY) || '';
+  }
+
+  function saveScriptUrl() {
+    const val = document.getElementById('scriptUrlInput').value.trim();
+    if (!val) return alert('Введи URL скрипта');
+    localStorage.setItem(SCRIPT_URL_KEY, val);
+    document.getElementById('ordersSetup').style.display = 'none';
+    loadOrders();
+  }
+
+  async function loadOrders() {
+    const url = getScriptUrl();
+    if (!url) {
+      document.getElementById('ordersSetup').style.display = 'block';
+      document.getElementById('scriptUrlInput').value = '';
+      return;
+    }
+
+    const spinner = document.getElementById('refreshSpinner');
+    spinner.style.animation = 'spin 1s linear infinite';
+    spinner.style.display = 'inline-block';
+
+    const errEl = document.getElementById('ordersError');
+    errEl.style.display = 'none';
+
+    try {
+      const resp = await fetch(`${url}?action=all_orders`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      allOrders = Array.isArray(data) ? data : [];
+      renderOrders();
+      updateOrdersBadge();
+    } catch (e) {
+      errEl.textContent = `Ошибка загрузки заказов: ${e.message}. Проверь URL скрипта и убедись что добавлена обработка action=all_orders.`;
+      errEl.style.display = 'block';
+    } finally {
+      spinner.style.animation = '';
+    }
+  }
+
+  function setOrderFilter(filter, btn) {
+    currentOrderFilter = filter;
+    document.querySelectorAll('.orders-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOrders();
+  }
+
+  function renderOrders() {
+    const list = document.getElementById('ordersList');
+    const summary = document.getElementById('ordersSummary');
+
+    // Stats
+    const total = allOrders.length;
+    const newOrders = allOrders.filter(o => !o.status || o.status === 'Новый' || o.status === '');
+    const paidOrders = allOrders.filter(o => o.status === 'Оплачен');
+    const preorders = allOrders.filter(o => o.type === 'Предзаказ' || o.type === 'preorder');
+    const totalSum = allOrders.reduce((s, o) => s + (parseFloat(String(o.total).replace(/\s/g,'')) || 0), 0);
+
+    // Update nav badge
+    const badge = document.getElementById('ordersNewCount');
+    if (badge) badge.textContent = newOrders.length > 0 ? newOrders.length : total;
+
+    summary.innerHTML = `
+      <div class="ostat"><div class="ostat-label">Всего заказов</div><div class="ostat-val">${total}</div></div>
+      <div class="ostat"><div class="ostat-label">Новых</div><div class="ostat-val" style="color:var(--bad)">${newOrders.length}</div></div>
+      <div class="ostat"><div class="ostat-label">Оплачено</div><div class="ostat-val" style="color:var(--good)">${paidOrders.length}</div></div>
+      <div class="ostat feature"><div class="ostat-label">Сумма (оплач.)</div><div class="ostat-val">${Math.round(paidOrders.reduce((s,o)=>s+(parseFloat(String(o.total).replace(/\s/g,''))||0),0)).toLocaleString('ru-RU')} ⃀</div></div>
+    `;
+
+    let filtered = allOrders;
+    if (currentOrderFilter === 'new') filtered = newOrders;
+    else if (currentOrderFilter === 'paid') filtered = paidOrders;
+    else if (currentOrderFilter === 'preorder') filtered = preorders;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="orders-empty">
+        <div class="orders-empty-icon">${total === 0 ? '📭' : '✓'}</div>
+        <div style="font-size:14px;color:var(--ink-2);margin-bottom:6px">${total === 0 ? 'Заказов пока нет' : 'В этом фильтре нет заказов'}</div>
+      </div>`;
+      return;
+    }
+
+    // Sort: newest first (by date desc)
+    filtered = [...filtered].sort((a, b) => {
+      const da = new Date(a.date || 0), db = new Date(b.date || 0);
+      return db - da;
+    });
+
+    list.innerHTML = filtered.map(o => renderOrderCard(o)).join('');
+  }
+
+  function renderOrderCard(o) {
+    const isPaid = o.status === 'Оплачен';
+    const isPreorder = o.type === 'Предзаказ' || o.type === 'preorder';
+    const cardClass = isPaid ? 'confirmed' : (isPreorder ? 'preorder' : '');
+
+    let badgeHtml = '';
+    if (isPaid) badgeHtml = '<span class="order-badge paid">✓ Оплачен</span>';
+    else if (isPreorder) badgeHtml = '<span class="order-badge pre">⏳ Предзаказ</span>';
+    else badgeHtml = '<span class="order-badge new">Новый</span>';
+
+    const promoHtml = o.promo ? `<span class="order-promo">🎁 ${escapeHtml(o.promo)}</span>` : '';
+
+    const waLink = o.phone
+      ? `https://wa.me/${String(o.phone).replace(/\D/g,'')}?text=${encodeURIComponent(`Привет, ${o.name || ''}! Ваш заказ получен.`)}`
+      : null;
+
+    const totalFmt = (parseFloat(String(o.total||'0').replace(/\s/g,''))||0).toLocaleString('ru-RU');
+
+    const confirmBtnHtml = isPaid
+      ? `<button class="btn-confirm" disabled>✓ Оплачен</button>`
+      : `<button class="btn-confirm" onclick="confirmOrder('${escapeHtml(o.id)}', this)">Подтвердить оплату</button>`;
+
+    const waBtnHtml = waLink
+      ? `<a class="btn-wa" href="${waLink}" target="_blank">WhatsApp</a>`
+      : '';
+
+    const dateStr = o.date ? new Date(o.date).toLocaleString('ru-RU', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+
+    return `
+    <div class="order-card ${cardClass}" id="ocard-${escapeHtml(o.id)}">
+      <div>
+        <div class="order-meta">
+          <span class="order-id">${escapeHtml(o.id || '—')}</span>
+          <span class="order-date">${dateStr}</span>
+          ${badgeHtml}
+        </div>
+        <div class="order-name">${escapeHtml(o.name || '—')}</div>
+        <div class="order-contact">📱 ${escapeHtml(o.phone || '—')} · 📍 ${escapeHtml(o.address || '—')}</div>
+        <div class="order-items">🛍 ${escapeHtml(o.items || '—')}</div>
+        <div class="order-total">${promoHtml}${totalFmt} сом</div>
+      </div>
+      <div class="order-actions">
+        ${confirmBtnHtml}
+        ${waBtnHtml}
+      </div>
+    </div>`;
+  }
+
+  async function confirmOrder(orderId, btn) {
+    const url = getScriptUrl();
+    if (!url) { alert('Нет URL скрипта'); return; }
+
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.textContent = '⏳ Отправляю...';
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm', orderId: orderId })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        // Update local state
+        const o = allOrders.find(x => x.id === orderId);
+        if (o) o.status = 'Оплачен';
+        // Update card
+        const card = document.getElementById(`ocard-${orderId}`);
+        if (card) {
+          card.classList.add('confirmed');
+          card.classList.remove('preorder');
+          const badge = card.querySelector('.order-badge');
+          if (badge) { badge.className = 'order-badge paid'; badge.textContent = '✓ Оплачен'; }
+          btn.classList.remove('loading');
+          btn.textContent = '✓ Оплачен';
+        }
+        updateOrdersBadge();
+      } else {
+        throw new Error(data.error || 'unknown error');
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = 'Подтвердить оплату';
+      alert(`Ошибка: ${e.message}`);
+    }
+  }
+
+  function updateOrdersBadge() {
+    const newCount = allOrders.filter(o => !o.status || o.status === 'Новый' || o.status === '').length;
+    const badge = document.getElementById('ordersNewCount');
+    if (badge) badge.textContent = newCount > 0 ? newCount : allOrders.length;
+  }
+
+  // Bind orders nav item
+  document.addEventListener('DOMContentLoaded', () => {
+    const navOrders = document.getElementById('navOrders');
+    if (navOrders) {
+      navOrders.addEventListener('click', () => switchView('orders'));
+    }
+    // Pre-fill saved URL
+    const saved = getScriptUrl();
+    const inp = document.getElementById('scriptUrlInput');
+    if (inp && saved) inp.value = saved;
+  });
+
+  // Spin animation
+  const spinStyle = document.createElement('style');
+  spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+  document.head.appendChild(spinStyle);
+
+  // Падающие лепестки сакуры
+  const petalColors = ['#fdd0de','#fbbece','#fce0ea','#fde8f0','#f9c8d8','#feeef4'];
+  function spawnPetal() {
+    const el = document.createElement('div');
+    el.className = 'sakura-petal';
+    const size = 9 + Math.random() * 8;
+    el.style.cssText = `
+      width:${size}px; height:${Math.round(size*0.82)}px;
+      background:${petalColors[Math.floor(Math.random()*petalColors.length)]};
+      left:${Math.random()*100}vw;
+      --dur:${6 + Math.random()*8}s;
+      --delay:${Math.random()*2}s;
+      --drift:${Math.random()*140-70}px;
+      --spin:${Math.random()*600-300}deg;
+      opacity:0;
+    `;
+    document.body.appendChild(el);
+    const ttl = (parseFloat(el.style.getPropertyValue('--dur')||'8') + parseFloat(el.style.getPropertyValue('--delay')||'0') + 1) * 1000;
+    setTimeout(() => el.remove(), ttl);
+  }
+  setInterval(spawnPetal, 700);
+</script>
+
+
+</body>
+</html>

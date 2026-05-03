@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Уютный дом · магазин</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf7f2;
+  --bg-2: #f2ece2;
+  --bg-3: #e8dfd2;
+  --panel: #ffffff;
+  --ink: #2d2519;
+  --ink-2: #5c5347;
+  --ink-3: #8a7f72;
+  --ink-faint: #b5ab9e;
+  --line: #e8e0d4;
+  --line-2: #d9cfc0;
+  --accent: #c08263;
+  --accent-hover: #a86d52;
+  --accent-soft: #f0ddd0;
+  --good: #5e8a50;
+  --good-soft: #dde8d4;
+  --bad: #b85c4d;
+  --bad-soft: #f5e0dd;
+  --warn: #c8975e;
+  --warn-soft: #f5e8d5;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --shadow: 0 2px 16px rgba(45,37,25,0.07);
+  --shadow-sm: 0 1px 4px rgba(45,37,25,0.05);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+.container{max-width:480px;margin:0 auto;padding:0 16px 80px}
+
+.shop-header{text-align:center;padding:36px 0 28px}
+.shop-logo{font-family:var(--serif);font-size:36px;color:var(--ink);line-height:1}
+.shop-logo em{font-style:italic;color:var(--accent)}
+.shop-desc{margin-top:8px;color:var(--ink-3);font-size:14px}
+.shop-instagram{display:inline-flex;align-items:center;gap:5px;margin-top:10px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none}
+.shop-instagram:hover{text-decoration:underline}
+
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px;padding:0 40px}
+.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--bg-2);color:var(--ink-faint);border:2px solid var(--bg-3);transition:all .3s;flex-shrink:0}
+.step-dot.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.step-dot.done{background:var(--good);color:#fff;border-color:var(--good)}
+.step-line{height:2px;flex:1;background:var(--bg-3);transition:background .3s}
+.step-line.done{background:var(--good)}
+
+.section{display:none;animation:fadeIn .3s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.section-title{font-family:var(--serif);font-size:26px;margin-bottom:6px}
+.section-sub{color:var(--ink-3);font-size:14px;margin-bottom:20px}
+
+/* PRODUCTS */
+.products{display:flex;flex-direction:column;gap:10px}
+.product-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;display:flex;align-items:center;gap:12px;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.product-card:not(.out-of-stock){cursor:pointer}
+.product-card:not(.out-of-stock):hover{border-color:var(--line-2)}
+.product-card.selected{border-color:var(--accent);background:linear-gradient(135deg,var(--panel) 0%,var(--accent-soft) 100%)}
+.product-card.out-of-stock{opacity:0.75}
+.product-card.preorder-item{border-color:var(--warn);background:linear-gradient(135deg,var(--panel) 0%,var(--warn-soft) 100%)}
+.product-img{width:60px;height:60px;border-radius:8px;background:var(--bg-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;position:relative}
+.product-info{flex:1;min-width:0}
+.product-name{font-weight:600;font-size:14.5px;color:var(--ink);line-height:1.3}
+.product-price{font-weight:700;color:var(--accent);font-size:15px;margin-top:2px}
+.product-stock{font-size:11.5px;margin-top:3px;font-weight:500}
+.product-stock.in-stock{color:var(--good)}
+.product-stock.low-stock{color:var(--warn)}
+.product-stock.no-stock{color:var(--bad)}
+
+.product-qty{display:flex;align-items:center;flex-shrink:0}
+.qty-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink-2);font-size:18px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.qty-btn:hover{border-color:var(--accent);color:var(--accent)}
+.qty-btn:active{background:var(--accent-soft)}
+.qty-num{width:32px;text-align:center;font-weight:700;font-size:15px}
+
+/* Preorder button on card */
+.preorder-btn{padding:7px 14px;border:1px solid var(--warn);background:var(--warn-soft);color:var(--warn);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.preorder-btn:hover{background:var(--warn);color:#fff}
+.preorder-btn.selected-pre{background:var(--warn);color:#fff}
+
+/* CART */
+.cart-summary{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm)}
+.cart-line{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;color:var(--ink-2)}
+.cart-line.total{border-top:1px solid var(--line);margin-top:8px;padding-top:12px;font-size:17px;font-weight:700;color:var(--ink)}
+.cart-line .price{font-weight:600;font-variant-numeric:tabular-nums}
+.cart-line .preorder-tag{font-size:10.5px;color:var(--warn);font-weight:600;background:var(--warn-soft);padding:2px 6px;border-radius:4px;margin-left:6px}
+.promo-row{margin-top:14px;display:flex;gap:8px}
+.promo-row input{flex:1;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;font-size:14px;text-transform:uppercase}
+.promo-row input:focus{border-color:var(--accent)}
+.promo-row input::placeholder{color:var(--ink-faint);text-transform:none}
+.promo-tag{margin-top:8px;display:none;align-items:center;gap:6px;padding:6px 12px;background:var(--good-soft);color:var(--good);border-radius:20px;font-size:12.5px;font-weight:600}
+.promo-tag.show{display:inline-flex}
+
+/* Preorder notice */
+.preorder-notice{margin-top:12px;padding:12px 14px;background:var(--warn-soft);border:1px solid var(--warn);border-radius:var(--radius-sm);font-size:13px;color:var(--ink-2);line-height:1.5}
+.preorder-notice strong{color:var(--warn)}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px}
+.form-group input,.form-group textarea{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:70px}
+.form-hint{font-size:11.5px;color:var(--ink-faint);margin-top:4px}
+
+.section-divider{display:flex;align-items:center;gap:14px;margin:28px 0 20px;color:var(--ink-faint);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--line)}
+
+.pay-btn{display:block;width:100%;padding:18px 20px;border:none;border-radius:var(--radius-sm);font-size:18px;font-weight:700;cursor:pointer;text-align:center;background:var(--accent);color:#fff;transition:all .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 16px rgba(192,130,99,.3)}
+.pay-btn:hover{background:var(--accent-hover)}
+.pay-btn:disabled{background:var(--bg-3);color:var(--ink-faint);cursor:not-allowed;box-shadow:none}
+.pay-btn.preorder-mode{background:var(--warn);box-shadow:0 4px 16px rgba(200,151,94,.3)}
+.pay-btn.preorder-mode:hover{background:#b07840}
+
+.qr-section{display:none;animation:fadeIn .3s ease;margin-top:24px}
+.qr-section.show{display:block}
+.qr-block{text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px 20px;box-shadow:var(--shadow-sm)}
+.qr-amount{font-family:var(--serif);font-size:42px;color:var(--accent);margin-bottom:4px}
+.qr-amount-label{color:var(--ink-3);font-size:13px;margin-bottom:20px}
+.qr-placeholder{width:200px;height:200px;margin:0 auto 16px;background:var(--bg-2);border:2px dashed var(--line-2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:13px;flex-direction:column;gap:6px}
+.qr-placeholder .qr-icon{font-size:48px;opacity:.5}
+.qr-instructions{font-size:13px;color:var(--ink-3);line-height:1.7}
+
+.confirm-note{margin-top:16px;padding:14px 16px;background:var(--bg-2);border-radius:var(--radius-sm);font-size:13px;color:var(--ink-2);line-height:1.6;text-align:center}
+.confirm-note strong{color:var(--ink)}
+.confirm-btn{display:block;width:100%;padding:16px 20px;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;text-align:center;margin-top:16px;background:var(--good);color:#fff;transition:all .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 16px rgba(94,138,80,.25)}
+.confirm-btn:hover{background:#4d7a3f}
+
+/* Preorder confirm */
+.preorder-confirm-section{display:none;animation:fadeIn .3s ease;margin-top:24px}
+.preorder-confirm-section.show{display:block}
+.preorder-info-block{background:var(--warn-soft);border:1px solid var(--warn);border-radius:var(--radius);padding:24px 20px;text-align:center}
+.preorder-info-block .pi-icon{font-size:48px;margin-bottom:12px}
+.preorder-info-block h3{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px}
+.preorder-info-block p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.preorder-submit-btn{display:block;width:100%;padding:16px 20px;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;text-align:center;margin-top:16px;background:var(--warn);color:#fff;transition:all .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 16px rgba(200,151,94,.3)}
+.preorder-submit-btn:hover{background:#b07840}
+
+.btn{display:block;width:100%;padding:14px 20px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{background:var(--bg-3);color:var(--ink-faint);cursor:not-allowed}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink-2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-row{display:flex;gap:10px;margin-top:20px}
+.btn-row .btn{flex:1}
+
+.success-block{text-align:center;padding:40px 20px}
+.success-icon{font-size:64px;margin-bottom:16px}
+.success-title{font-family:var(--serif);font-size:28px;margin-bottom:10px}
+.success-text{color:var(--ink-3);font-size:14px;line-height:1.6;max-width:320px;margin:0 auto}
+.order-id{display:inline-block;margin-top:16px;padding:8px 16px;background:var(--bg-2);border-radius:8px;font-weight:700;color:var(--accent);font-size:16px;letter-spacing:.05em}
+.order-items-recap{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 18px;text-align:left;font-size:14px}
+.order-items-recap .total-line{display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:15px}
+
+/* ADMIN */
+.admin-fab{position:fixed;bottom:20px;left:20px;width:42px;height:42px;border-radius:50%;background:var(--ink);color:var(--bg);border:none;font-size:16px;cursor:pointer;z-index:50;display:flex;align-items:center;justify-content:center;opacity:.3;transition:opacity .2s}
+.admin-fab:hover{opacity:1}
+.admin-backdrop{position:fixed;inset:0;background:rgba(45,37,25,.5);z-index:70;display:none;align-items:center;justify-content:center;padding:12px}
+.admin-backdrop.show{display:flex}
+.admin-panel{background:var(--panel);border-radius:var(--radius);width:100%;max-width:960px;height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+.admin-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line);flex-shrink:0}
+.admin-header h2{font-family:var(--serif);font-size:24px;margin:0}
+.admin-close{background:transparent;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;padding:4px}
+.admin-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);flex-shrink:0;padding:0 24px}
+.admin-tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;transition:all .15s}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.admin-tab:hover{color:var(--ink)}
+.admin-body{flex:1;overflow:hidden}
+.admin-view{display:none;height:100%}
+.admin-view.active{display:block}
+.admin-view iframe{width:100%;height:100%;border:none}
+.admin-local{padding:24px;overflow-y:auto;height:100%}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{text-align:left;padding:10px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);border-bottom:1px solid var(--line);font-weight:600}
+.admin-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.admin-order-items{font-size:11.5px;color:var(--ink-3);max-width:180px}
+.admin-note{margin-top:16px;padding:12px 16px;background:var(--bg-2);border-radius:var(--radius-sm);font-size:12.5px;color:var(--ink-3);line-height:1.6}
+.admin-note strong{color:var(--ink)}
+
+/* Stock management in admin */
+.stock-section{margin-bottom:28px}
+.stock-section h3{font-family:var(--serif);font-size:20px;margin-bottom:14px;color:var(--ink)}
+.stock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.stock-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px}
+.stock-card-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;line-height:1.3}
+.stock-controls{display:flex;align-items:center;gap:8px}
+.stock-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.stock-btn:hover{border-color:var(--accent);color:var(--accent)}
+.stock-num{flex:1;text-align:center;font-weight:700;font-size:18px;color:var(--ink)}
+.stock-num.zero{color:var(--bad)}
+.stock-num.low{color:var(--warn)}
+
+.type-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:600}
+.type-badge.normal{background:var(--good-soft);color:var(--good)}
+.type-badge.preorder{background:var(--warn-soft);color:var(--warn)}
+.status-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.status-btn.pending{background:#fef3cd;color:#856404}
+.status-btn.pending:hover{background:var(--good-soft);color:var(--good)}
+.status-btn.confirmed{background:var(--good-soft);color:var(--good)}
+
+/* BLOGGER */
+.dash-toggle{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(192,130,99,.35);z-index:50;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.dash-toggle:hover{transform:scale(1.08)}
+.dashboard-backdrop{position:fixed;inset:0;background:rgba(45,37,25,.4);z-index:60;display:none;align-items:flex-end;justify-content:center}
+.dashboard-backdrop.show{display:flex}
+.dashboard-panel{background:var(--panel);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;padding:24px 20px 40px;box-shadow:0 -4px 30px rgba(45,37,25,.12);animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.dash-header h2{font-family:var(--serif);font-size:24px}
+.dash-close{background:transparent;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;padding:4px}
+.dash-promo-input{display:flex;gap:8px;margin-bottom:20px}
+.dash-promo-input input{flex:1;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;text-transform:uppercase;font-weight:600}
+.dash-promo-input input:focus{border-color:var(--accent)}
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.dash-stat{background:var(--bg);border-radius:var(--radius-sm);padding:14px 16px;text-align:center}
+.dash-stat-value{font-family:var(--serif);font-size:28px;color:var(--ink)}
+.dash-stat-value.accent{color:var(--accent)}
+.dash-stat-label{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-top:4px}
+.dash-orders{display:flex;flex-direction:column;gap:8px}
+.dash-order{background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.dash-order-left{display:flex;flex-direction:column;gap:2px}
+.dash-order-id{font-weight:600;font-size:13px;color:var(--ink)}
+.dash-order-date{font-size:11.5px;color:var(--ink-3)}
+.dash-order-amount{font-weight:700;color:var(--accent);font-size:15px}
+.dash-order-commission{font-size:11.5px;color:var(--good);font-weight:600}
+.dash-empty{text-align:center;padding:32px 20px;color:var(--ink-faint);font-size:14px;font-style:italic}
+
+@media(min-width:600px){.container{padding:0 24px 80px}}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="shop-header">
+    <div class="shop-logo">Уютный <em>дом</em></div>
+    <div class="shop-desc">Развивающие игрушки для детей с доставкой по Бишкеку</div>
+    <a href="#" class="shop-instagram">📷 @уютный_дом</a>
+  </header>
+
+  <div class="steps">
+    <div class="step-dot active" id="sd1">1</div>
+    <div class="step-line" id="sl1"></div>
+    <div class="step-dot" id="sd2">2</div>
+    <div class="step-line" id="sl2"></div>
+    <div class="step-dot" id="sd3">✓</div>
+  </div>
+
+  <!-- STEP 1: Products -->
+  <div class="section active" id="step1">
+    <h2 class="section-title">Выберите товар</h2>
+    <p class="section-sub">Нажмите на товар, чтобы добавить в корзину</p>
+    <div class="products" id="productList"></div>
+    <div class="cart-summary" id="cartSummary" style="display:none">
+      <div id="cartLines"></div>
+      <div id="preorderNotice" class="preorder-notice" style="display:none">
+        <strong>⏳ Предзаказ — доставка 12–14 дней</strong><br>
+        Один или несколько товаров сейчас в пути из Китая. После оформления мы свяжемся с вами в WhatsApp.
+      </div>
+      <div class="cart-line total"><span>Итого</span><span class="price" id="cartTotal">0 сом</span></div>
+      <div class="promo-row"><input type="text" id="promoInput" placeholder="Промокод блогера (если есть)"></div>
+      <div class="promo-tag" id="promoTag">🎁 Скидка 10% применена</div>
+      <div id="promoInvalid" style="display:none;margin-top:6px;font-size:12px;color:var(--bad);">Промокод не найден</div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" id="toStep2" disabled>Далее →</button></div>
+  </div>
+
+  <!-- STEP 2: Contact + Payment -->
+  <div class="section" id="step2">
+    <h2 class="section-title">Данные и оплата</h2>
+    <p class="section-sub">Заполните данные и оплатите</p>
+
+    <div class="form-group">
+      <label>Имя</label>
+      <input type="text" id="custName" placeholder="Как вас зовут?">
+    </div>
+    <div class="form-group">
+      <label>WhatsApp номер</label>
+      <input type="tel" id="custWhatsApp" placeholder="+996 7XX XXX XXX">
+      <div class="form-hint">На этот номер мы свяжемся для подтверждения</div>
+    </div>
+    <div class="form-group">
+      <label>Адрес доставки</label>
+      <textarea id="custAddress" placeholder="Город, район, улица, дом, квартира"></textarea>
+    </div>
+
+    <div class="section-divider" id="payDivider">оплата</div>
+
+    <!-- Normal order: pay button -->
+    <div id="normalPayBlock">
+      <button class="pay-btn" id="payBtn" disabled>Оплатить 0 сом</button>
+      <div class="qr-section" id="qrSection">
+        <div class="qr-block">
+          <div class="qr-amount" id="payAmount">0 сом</div>
+          <div class="qr-amount-label">переведите точную сумму</div>
+          <div class="qr-placeholder">
+            <div class="qr-icon">⣿</div>
+            <div>QR-код Mbank</div>
+          </div>
+          <div class="qr-instructions">
+            Откройте Mbank → Переводы → QR<br>
+            Отсканируйте и переведите <strong>точную сумму</strong>
+          </div>
+        </div>
+        <div class="confirm-note"><strong>После перевода</strong> нажмите кнопку ниже. Мы проверим оплату и свяжемся с вами.</div>
+        <button class="confirm-btn" id="confirmBtn">✓ Я оплатил</button>
+      </div>
+    </div>
+
+    <!-- Preorder block -->
+    <div id="preorderPayBlock" style="display:none">
+      <div class="preorder-confirm-section show">
+        <div class="preorder-info-block">
+          <div class="pi-icon">⏳</div>
+          <h3>Оформить предзаказ</h3>
+          <p>Товар сейчас в пути из Китая.<br>Доставка <strong>12–14 дней</strong>.<br>После отправки заявки мы свяжемся с вами в WhatsApp.</p>
+        </div>
+        <button class="preorder-submit-btn" id="preorderSubmitBtn" disabled>Оформить предзаказ →</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px"><button class="btn btn-outline" id="backTo1">← Назад</button></div>
+  </div>
+
+  <!-- STEP 3: Success -->
+  <div class="section" id="step3">
+    <div class="success-block">
+      <div class="success-icon" id="successIcon">🎉</div>
+      <h2 class="success-title" id="successTitle">Заказ оформлен!</h2>
+      <p class="success-text" id="successText">Мы проверим оплату и свяжемся с вами в WhatsApp для подтверждения доставки.</p>
+      <div class="order-id" id="successOrderId">—</div>
+      <div class="order-items-recap" id="successItems"></div>
+      <div class="btn-row" style="margin-top:24px"><button class="btn btn-outline" id="newOrderBtn">Новый заказ</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOGGER -->
+<button class="dash-toggle" id="dashToggle" title="Панель блогера">📊</button>
+<div class="dashboard-backdrop" id="dashBackdrop">
+  <div class="dashboard-panel">
+    <div class="dash-header"><h2>Мои продажи</h2><button class="dash-close" id="dashClose">✕</button></div>
+    <div class="dash-promo-input">
+      <input type="text" id="dashPromoInput" placeholder="Введите свой промокод">
+      <button class="btn btn-primary" style="width:auto;padding:10px 18px" id="dashLoadBtn">Показать</button>
+    </div>
+    <div class="dash-stats" id="dashStats" style="display:none">
+      <div class="dash-stat"><div class="dash-stat-value" id="dashOrderCount">0</div><div class="dash-stat-label">Заказов</div></div>
+      <div class="dash-stat"><div class="dash-stat-value" id="dashTotalSales">0 сом</div><div class="dash-stat-label">Продаж</div></div>
+      <div class="dash-stat"><div class="dash-stat-value accent" id="dashCommission">0 сом</div><div class="dash-stat-label">Твой заработок</div></div>
+      <div class="dash-stat"><div class="dash-stat-value" id="dashRate">15%</div><div class="dash-stat-label">Комиссия</div></div>
+    </div>
+    <div class="dash-orders" id="dashOrders"><div class="dash-empty">Введите свой промокод чтобы увидеть заказы</div></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<button class="admin-fab" id="adminFab" title="Админ">⚙</button>
+<div class="admin-backdrop" id="adminBackdrop">
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h2>Админка</h2>
+      <button class="admin-close" id="adminClose">✕</button>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="sheet">Google Таблица</button>
+      <button class="admin-tab" data-tab="stock">Остатки</button>
+      <button class="admin-tab" data-tab="local">Локальные заказы</button>
+    </div>
+    <div class="admin-body">
+      <div class="admin-view active" id="adminViewSheet">
+        <iframe id="sheetFrame" src="about:blank"></iframe>
+      </div>
+      <div class="admin-view" id="adminViewStock">
+        <div class="admin-local">
+          <div class="stock-section">
+            <h3>Управление остатками</h3>
+            <div class="stock-grid" id="stockGrid"></div>
+          </div>
+          <div class="admin-note">
+            <strong>Как работают остатки:</strong> Когда остаток = 0, кнопка товара автоматически меняется на «Предзаказ». Покупатель заполняет форму и переходит в WhatsApp — там вы обсуждаете условия предзаказа. При каждом подтверждённом заказе остаток уменьшается на 1 автоматически.
+          </div>
+        </div>
+      </div>
+      <div class="admin-view" id="adminViewLocal">
+        <div class="admin-local">
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead><tr><th>№</th><th>Дата</th><th>Тип</th><th>Имя</th><th>WhatsApp</th><th>Товары</th><th>Сумма</th><th>Промокод</th><th>Статус</th></tr></thead>
+              <tbody id="adminRows"></tbody>
+            </table>
+          </div>
+          <div class="admin-note"><strong>Резервная копия.</strong> Основные данные в Google Таблице. Здесь видны заказы из этого браузера.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// НАСТРОЙКИ
+// ============================================================
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoXwTzP0y5RF_CsQF4qtkIj4L5US8caN6mTnGi-2OKFL7zdiSzZGqGD-Z4t91XxCf7lg/exec';
+const GOOGLE_SHEET_EMBED = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpyEDhg9PTD4XBDmjto2vb4NttuRodHjZwROABsJiIplgIyjZ2DbXjKrGmc_8d8OC0_r4Ph2LU6Z1y/pubhtml';
+const MY_WHATSAPP = '996707050325';
+const COMMISSION_RATE = 0.15;
+const STOCK_KEY = 'shop_stock_v1';
+const STORAGE_KEY = 'shop_orders_v5';
+
+// ============================================================
+// ТОВАРЫ
+// ============================================================
+const PRODUCTS = [
+  { id:'p1', name:'Маленький мастер — первый набор инструментов', price:2267, img:'https://raw.githubusercontent.com/Maxmarker815/index.html1/main/tools2.jpg', defaultStock:4 },
+  { id:'p2', name:'Лаборатория юного учёного', price:2653, img:'https://raw.githubusercontent.com/Maxmarker815/index.html1/main/chemistry.jpg', defaultStock:4 },
+  { id:'p3', name:'Набор электроники и программирования — собери свою электронику', price:3896, img:'https://raw.githubusercontent.com/Maxmarker815/index.html1/main/electronics.jpg', defaultStock:4 },
+  { id:'p4', name:'Железная дорога с вокзалом', price:3476, img:'https://raw.githubusercontent.com/Maxmarker815/index.html1/main/train.jpg', defaultStock:2 },
+  { id:'p5', name:'Супер-мастер — профессиональный набор', price:2400, img:'https://raw.githubusercontent.com/Maxmarker815/index.html1/main/tools1.jpg', defaultStock:4 },
+];
+const PROMO_DISCOUNT = 0.10; // 10% скидка по промокоду блогера
+
+// Список рабочих промокодов
+const VALID_PROMOS = [
+  'PROMO01', 'PROMO02', 'PROMO03', 'PROMO04', 'PROMO05',
+  'PROMO06', 'PROMO07', 'PROMO08', 'PROMO09', 'PROMO10'
+];
+
+// ============================================================
+let cart = {};       // { productId: qty }
+let preorderCart = {}; // { productId: true } — товары на предзаказ
+let promoCode = '';
+let orders = [];
+let stock = {};      // { productId: qty }
+
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g,' ') + ' сом';
+// Проверка промокода
+function isPromoValid() {
+  return VALID_PROMOS.includes(promoCode);
+}
+// Цена с учётом промокода
+function getPrice(product) {
+  return isPromoValid()
+    ? Math.round(product.price * (1 - PROMO_DISCOUNT))
+    : product.price;
+}
+
+// STOCK
+function loadStock() {
+  try {
+    const d = localStorage.getItem(STOCK_KEY);
+    if (d) {
+      stock = JSON.parse(d);
+      // Fill missing products with defaults
+      PRODUCTS.forEach(p => { if (stock[p.id] === undefined) stock[p.id] = p.defaultStock; });
+    } else {
+      stock = {};
+      PRODUCTS.forEach(p => { stock[p.id] = p.defaultStock; });
+    }
+  } catch(e) {
+    stock = {};
+    PRODUCTS.forEach(p => { stock[p.id] = p.defaultStock; });
+  }
+}
+
+function saveStock() {
+  try { localStorage.setItem(STOCK_KEY, JSON.stringify(stock)); } catch(e) {}
+}
+
+function decrementStock(productId) {
+  if (stock[productId] > 0) {
+    stock[productId]--;
+    saveStock();
+  }
+}
+
+// ORDERS
+function loadOrders() { try { const d=localStorage.getItem(STORAGE_KEY); if(d) orders=JSON.parse(d); } catch(e){} }
+function saveOrders() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify(orders)); } catch(e){} }
+
+function getTotal() {
+  let t = 0;
+  Object.entries(cart).filter(([,q])=>q>0).forEach(([id,q])=>{ t += getPrice(PRODUCTS.find(p=>p.id===id)) * q; });
+  Object.keys(preorderCart).forEach(id=>{ t += getPrice(PRODUCTS.find(p=>p.id===id)); });
+  return t;
+}
+
+function getCartItems() {
+  const items = [];
+  Object.entries(cart).filter(([,q])=>q>0).forEach(([id,q])=>{ const p=PRODUCTS.find(x=>x.id===id); items.push({name:p.name,price:getPrice(p),qty:q,preorder:false}); });
+  Object.keys(preorderCart).forEach(id=>{ const p=PRODUCTS.find(x=>x.id===id); items.push({name:p.name,price:getPrice(p),qty:1,preorder:true}); });
+  return items;
+}
+
+function hasPreorderItems() { return Object.keys(preorderCart).length > 0; }
+function hasNormalItems() { return Object.entries(cart).some(([,q])=>q>0); }
+
+// RENDER PRODUCTS
+function renderProducts() {
+  $('productList').innerHTML = PRODUCTS.map(p => {
+    const qty = cart[p.id] || 0;
+    const inPreorder = !!preorderCart[p.id];
+    const stockQty = stock[p.id] || 0;
+    const isOutOfStock = stockQty <= 0;
+
+    let stockLabel = '';
+    if (isOutOfStock) {
+      stockLabel = '<span class="product-stock no-stock">Нет в наличии — предзаказ</span>';
+    } else if (stockQty === 1) {
+      stockLabel = '<span class="product-stock low-stock">Последний!</span>';
+    } else if (stockQty <= 2) {
+      stockLabel = `<span class="product-stock low-stock">Осталось ${stockQty} шт.</span>`;
+    } else {
+      stockLabel = `<span class="product-stock in-stock">В наличии: ${stockQty} шт.</span>`;
+    }
+
+    let actionBlock = '';
+    if (isOutOfStock) {
+      actionBlock = `<button class="preorder-btn ${inPreorder?'selected-pre':''}" data-preorder="${p.id}">${inPreorder ? '✓ Предзаказ' : '⏳ Предзаказ'}</button>`;
+    } else {
+      actionBlock = `
+        <div class="product-qty">
+          <button class="qty-btn" data-action="minus" data-id="${p.id}" ${qty===0?'style="visibility:hidden"':''}>−</button>
+          <span class="qty-num" ${qty===0?'style="visibility:hidden"':''}>${qty}</span>
+          <button class="qty-btn" data-action="plus" data-id="${p.id}">+</button>
+        </div>`;
+    }
+
+    const cardClass = `product-card ${qty>0?'selected':''} ${inPreorder?'preorder-item':''} ${isOutOfStock?'out-of-stock':''}`;
+
+    return `<div class="${cardClass}" data-id="${p.id}">
+      <div class="product-img"><img src="${p.img}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        ${isPromoValid()
+          ? `<div class="product-price">${fmt(getPrice(p))} <span style="font-size:12px;color:var(--ink-faint);text-decoration:line-through;font-weight:400">${fmt(p.price)}</span></div>`
+          : `<div class="product-price">${fmt(p.price)}</div>`
+        }
+        ${stockLabel}
+      </div>
+      ${actionBlock}
+    </div>`;
+  }).join('');
+}
+
+function updateCart() {
+  const normalItems = Object.entries(cart).filter(([,q])=>q>0);
+  const preItems = Object.keys(preorderCart);
+  const hasItems = normalItems.length > 0 || preItems.length > 0;
+
+  if (!hasItems) {
+    $('cartSummary').style.display = 'none';
+    $('toStep2').disabled = true;
+    return;
+  }
+
+  $('cartSummary').style.display = 'block';
+  $('toStep2').disabled = false;
+
+  let total = 0;
+  let linesHtml = '';
+
+  normalItems.forEach(([id,qty]) => {
+    const p = PRODUCTS.find(x=>x.id===id);
+    const sub = p.price * qty;
+    total += sub;
+    linesHtml += `<div class="cart-line"><span>${p.name} × ${qty}</span><span class="price">${fmt(sub)}</span></div>`;
+  });
+
+  preItems.forEach(id => {
+    const p = PRODUCTS.find(x=>x.id===id);
+    total += p.price;
+    linesHtml += `<div class="cart-line"><span>${p.name} <span class="preorder-tag">предзаказ</span></span><span class="price">${fmt(p.price)}</span></div>`;
+  });
+
+  $('cartLines').innerHTML = linesHtml;
+  $('cartTotal').textContent = fmt(total);
+  $('preorderNotice').style.display = preItems.length > 0 ? 'block' : 'none';
+}
+
+function goToStep(n) {
+  ['step1','step2','step3'].forEach((id,i)=>$(id).classList.toggle('active',i===n-1));
+  for(let i=1;i<=3;i++){const d=$('sd'+i);d.classList.remove('active','done');if(i<n)d.classList.add('done');else if(i===n)d.classList.add('active');}
+  for(let i=1;i<=2;i++)$('sl'+i).classList.toggle('done',i<n);
+
+  if (n === 2) {
+    const total = getTotal();
+    const isPreorderOnly = hasPreorderItems() && !hasNormalItems();
+    const isMixed = hasPreorderItems() && hasNormalItems();
+
+    if (isPreorderOnly) {
+      // Show only preorder block
+      $('normalPayBlock').style.display = 'none';
+      $('preorderPayBlock').style.display = 'block';
+      $('payDivider').textContent = 'предзаказ';
+      validateForm();
+    } else {
+      // Normal or mixed — show pay button
+      $('normalPayBlock').style.display = 'block';
+      $('preorderPayBlock').style.display = 'none';
+      $('payDivider').textContent = 'оплата';
+      $('payBtn').textContent = `Оплатить ${fmt(total)}`;
+      $('payAmount').textContent = fmt(total);
+      $('qrSection').classList.remove('show');
+      $('payBtn').style.display = 'block';
+      validateForm();
+    }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function validateForm() {
+  const ok = $('custName').value.trim() && $('custWhatsApp').value.trim() && $('custAddress').value.trim();
+  if ($('payBtn')) $('payBtn').disabled = !ok;
+  if ($('preorderSubmitBtn')) $('preorderSubmitBtn').disabled = !ok;
+}
+
+function submitOrder(isPreorder) {
+  const orderId = (isPreorder ? 'PRE-' : 'Z-') + Date.now().toString(36).toUpperCase().slice(-6);
+  const items = getCartItems();
+  const total = getTotal();
+  const custName = $('custName').value.trim();
+  const custWA = $('custWhatsApp').value.trim();
+  const custAddr = $('custAddress').value.trim();
+  const itemsText = items.map(i => i.name + (i.qty>1?' ×'+i.qty:'') + (i.preorder?' [предзаказ]':'')).join(', ');
+
+  const order = {
+    id: orderId,
+    date: new Date().toISOString(),
+    type: isPreorder ? 'preorder' : 'normal',
+    name: custName,
+    whatsapp: custWA,
+    address: custAddr,
+    items, total,
+    promo: promoCode || '',
+    status: 'pending'
+  };
+
+  // Stock decrements when admin confirms — not here
+  orders.push(order);
+  saveOrders();
+
+  // Send to Google Sheets
+  if (GOOGLE_SCRIPT_URL) {
+    const now = new Date();
+    const dateStr = `${now.getDate()}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: dateStr,
+        orderId: orderId,
+        name: custName,
+        whatsapp: custWA,
+        address: custAddr,
+        items: itemsText,
+        total: total,
+        promo: promoCode || '',
+        type: isPreorder ? 'ПРЕДЗАКАЗ' : 'ЗАКАЗ'
+      })
+    }).catch(err => console.warn('Google Sheets error:', err));
+  }
+
+  // WhatsApp notification
+  const prefix = isPreorder ? 'ПРЕДЗАКАЗ' : 'НОВЫЙ ЗАКАЗ';
+  const waText = encodeURIComponent(
+    `${prefix} ${orderId}\n\n` +
+    `Имя: ${custName}\n` +
+    `WhatsApp: ${custWA}\n` +
+    `Адрес: ${custAddr}\n\n` +
+    `Товары: ${itemsText}\n` +
+    `Сумма: ${fmt(total)}\n` +
+    (promoCode ? `Промокод: ${promoCode}\n` : '') +
+    (isPreorder ? `\nДоставка 12-14 дней. Обсудить условия предзаказа.` : `\nПроверить оплату в Mbank`)
+  );
+  window.open(`https://wa.me/${MY_WHATSAPP}?text=${waText}`, '_blank');
+
+  // Success screen
+  $('successOrderId').textContent = orderId;
+  if (isPreorder) {
+    $('successIcon').textContent = '⏳';
+    $('successTitle').textContent = 'Предзаказ оформлен!';
+    $('successText').textContent = 'Мы свяжемся с вами в WhatsApp для обсуждения условий. Доставка 12–14 дней.';
+  } else {
+    $('successIcon').textContent = '🎉';
+    $('successTitle').textContent = 'Заказ оформлен!';
+    $('successText').textContent = 'Мы проверим оплату и свяжемся с вами в WhatsApp для подтверждения доставки.';
+  }
+
+  let html = items.map(i=>`<div class="cart-line"><span>${i.name} × ${i.qty}${i.preorder?' <span class="preorder-tag">предзаказ</span>':''}</span><span class="price">${fmt(i.price*i.qty)}</span></div>`).join('');
+  html += `<div class="total-line"><span>Итого</span><span>${fmt(total)}</span></div>`;
+  $('successItems').innerHTML = html;
+  goToStep(3);
+}
+
+function resetForm() {
+  cart = {}; preorderCart = {}; promoCode = '';
+  $('promoInput').value = ''; $('promoTag').classList.remove('show');
+  $('custName').value = ''; $('custWhatsApp').value = ''; $('custAddress').value = '';
+  if ($('payBtn')) $('payBtn').disabled = true;
+  if ($('preorderSubmitBtn')) $('preorderSubmitBtn').disabled = true;
+  renderProducts(); updateCart(); goToStep(1);
+}
+
+// DASHBOARD
+function loadDashboard() {
+  const code = $('dashPromoInput').value.trim().toUpperCase();
+  if (!code) return;
+
+  // Check promo is valid
+  if (!VALID_PROMOS.includes(code)) {
+    $('dashStats').style.display = 'none';
+    $('dashOrders').innerHTML = '<div class="dash-empty">Промокод не найден</div>';
+    return;
+  }
+
+  $('dashOrders').innerHTML = '<div class="dash-empty">Загружаю данные...</div>';
+
+  // Read from Google Sheets
+  fetch(GOOGLE_SCRIPT_URL + '?promo=' + code)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== 'ok' || data.orders.length === 0) {
+        $('dashStats').style.display = 'none';
+        $('dashOrders').innerHTML = '<div class="dash-empty">Оплаченных заказов по промокоду «' + code + '» пока нет</div>';
+        return;
+      }
+      const orders = data.orders;
+      const ts = orders.reduce((s, o) => s + parseFloat(o.total || 0), 0);
+      $('dashStats').style.display = 'grid';
+      $('dashOrderCount').textContent = orders.length;
+      $('dashTotalSales').textContent = fmt(ts);
+      $('dashCommission').textContent = fmt(ts * COMMISSION_RATE);
+      $('dashRate').textContent = Math.round(COMMISSION_RATE * 100) + '%';
+      $('dashOrders').innerHTML = orders.map(o => {
+        return `<div class="dash-order">
+          <div class="dash-order-left">
+            <div class="dash-order-id">${o.orderId} · ${o.items}</div>
+            <div class="dash-order-date">${o.date}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="dash-order-amount">${fmt(o.total)}</div>
+            <div class="dash-order-commission">+${fmt(o.total * COMMISSION_RATE)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    })
+    .catch(err => {
+      $('dashStats').style.display = 'none';
+      $('dashOrders').innerHTML = '<div class="dash-empty">Ошибка загрузки. Попробуй ещё раз.</div>';
+    });
+}
+
+// ADMIN - Stock Grid
+function renderStockGrid() {
+  $('stockGrid').innerHTML = PRODUCTS.map(p => {
+    const qty = stock[p.id] || 0;
+    const numClass = qty === 0 ? 'zero' : (qty <= 2 ? 'low' : '');
+    return `<div class="stock-card">
+      <div class="stock-card-name">${p.emoji} ${p.name}</div>
+      <div class="stock-controls">
+        <button class="stock-btn" data-stock-action="minus" data-id="${p.id}">−</button>
+        <div class="stock-num ${numClass}" id="stockNum_${p.id}">${qty}</div>
+        <button class="stock-btn" data-stock-action="plus" data-id="${p.id}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ADMIN - Local Orders
+function renderLocalOrders() {
+  loadOrders();
+  const tbody = $('adminRows');
+  if (orders.length===0) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--ink-faint);padding:30px">Нет заказов</td></tr>'; return; }
+  tbody.innerHTML = orders.map((o,i) => {
+    const d = new Date(o.date);
+    const ds = `${d.getDate()}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const names = o.items.map(it=>it.name+(it.qty>1?' ×'+it.qty:'')).join(', ');
+    const typeBadge = o.type==='preorder'
+      ? '<span class="type-badge preorder">Предзаказ</span>'
+      : '<span class="type-badge normal">Заказ</span>';
+    const isPending = o.status !== 'confirmed';
+    const statusBtn = isPending
+      ? `<button class="status-btn pending" data-idx="${i}">⏳ Ожидает</button>`
+      : `<button class="status-btn confirmed" data-idx="${i}">✓ Оплачен</button>`;
+    return `<tr>
+      <td>${i+1}</td><td>${ds}</td><td>${typeBadge}</td>
+      <td>${o.name}</td>
+      <td style="white-space:nowrap">${o.whatsapp}</td>
+      <td class="admin-order-items">${names}</td>
+      <td style="font-weight:600;white-space:nowrap">${fmt(o.total)}</td>
+      <td style="font-weight:600;color:var(--accent)">${o.promo||'—'}</td>
+      <td>${statusBtn}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const order = orders[idx];
+      if (order.status !== 'confirmed') {
+        order.status = 'confirmed';
+        if (order.type !== 'preorder') {
+          order.items.forEach(item => {
+            const product = PRODUCTS.find(p => p.name === item.name);
+            if (product) { for (let i=0; i<item.qty; i++) decrementStock(product.id); }
+          });
+        }
+      } else {
+        order.status = 'pending';
+        if (order.type !== 'preorder') {
+          order.items.forEach(item => {
+            const product = PRODUCTS.find(p => p.name === item.name);
+            if (product) { stock[product.id] = (stock[product.id]||0) + item.qty; saveStock(); }
+          });
+        }
+      }
+      saveOrders();
+      renderLocalOrders();
+      renderStockGrid();
+      renderProducts();
+    });
+  });
+}
+
+function bindEvents() {
+  // Product list clicks
+  $('productList').addEventListener('click', e => {
+    // Qty buttons (normal stock items)
+    const qtyBtn = e.target.closest('.qty-btn');
+    if (qtyBtn) {
+      e.stopPropagation();
+      const id = qtyBtn.dataset.id;
+      const maxQty = stock[id] || 0;
+      if (qtyBtn.dataset.action === 'plus') {
+        cart[id] = Math.min((cart[id]||0)+1, maxQty);
+      } else {
+        cart[id] = Math.max(0, (cart[id]||0)-1);
+      }
+      renderProducts(); updateCart(); return;
+    }
+
+    // Preorder button
+    const preBtn = e.target.closest('.preorder-btn');
+    if (preBtn) {
+      e.stopPropagation();
+      const id = preBtn.dataset.preorder;
+      if (preorderCart[id]) { delete preorderCart[id]; }
+      else { preorderCart[id] = true; }
+      renderProducts(); updateCart(); return;
+    }
+
+    // Card click (toggle for normal items)
+    const card = e.target.closest('.product-card:not(.out-of-stock)');
+    if (card) {
+      const id = card.dataset.id;
+      if (cart[id]) { cart[id] = 0; } else { cart[id] = 1; }
+      renderProducts(); updateCart();
+    }
+  });
+
+  $('promoInput').addEventListener('input', e => {
+    promoCode = e.target.value.trim().toUpperCase();
+    const valid = isPromoValid();
+    const hasInput = promoCode.length >= 2;
+    $('promoTag').classList.toggle('show', valid);
+    $('promoInvalid').style.display = (hasInput && !valid) ? 'block' : 'none';
+    renderProducts();
+    updateCart();
+  });
+
+  $('toStep2').addEventListener('click', () => goToStep(2));
+  $('backTo1').addEventListener('click', () => goToStep(1));
+  ['custName','custWhatsApp','custAddress'].forEach(id => $(id).addEventListener('input', validateForm));
+
+  // Pay button → show QR
+  $('payBtn').addEventListener('click', () => {
+    $('payBtn').style.display = 'none';
+    $('qrSection').classList.add('show');
+    $('qrSection').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  $('confirmBtn').addEventListener('click', () => submitOrder(false));
+  $('preorderSubmitBtn').addEventListener('click', () => submitOrder(true));
+  $('newOrderBtn').addEventListener('click', resetForm);
+
+  // Blogger
+  $('dashToggle').addEventListener('click', () => $('dashBackdrop').classList.add('show'));
+  $('dashClose').addEventListener('click', () => $('dashBackdrop').classList.remove('show'));
+  $('dashBackdrop').addEventListener('click', e => { if(e.target===$('dashBackdrop')) $('dashBackdrop').classList.remove('show'); });
+  $('dashLoadBtn').addEventListener('click', loadDashboard);
+  $('dashPromoInput').addEventListener('keydown', e => { if(e.key==='Enter') loadDashboard(); });
+
+  // Admin open
+  $('adminFab').addEventListener('click', () => {
+    const pwd = prompt('Введите пароль:');
+    if (pwd !== 'venera5555') { alert('Неверный пароль'); return; }
+    if (GOOGLE_SHEET_EMBED) {
+      $('sheetFrame').src = GOOGLE_SHEET_EMBED;
+    }
+    renderStockGrid();
+    renderLocalOrders();
+    $('adminBackdrop').classList.add('show');
+  });
+
+  $('adminClose').addEventListener('click', () => { $('adminBackdrop').classList.remove('show'); $('sheetFrame').src='about:blank'; });
+  $('adminBackdrop').addEventListener('click', e => { if(e.target===$('adminBackdrop')){ $('adminBackdrop').classList.remove('show'); $('sheetFrame').src='about:blank'; } });
+
+  // Admin tabs
+  document.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
+      tab.classList.add('active');
+      const tabName = tab.dataset.tab;
+      const viewMap = { sheet:'Sheet', stock:'Stock', local:'Local' };
+      $('adminView' + viewMap[tabName]).classList.add('active');
+    });
+  });
+
+  // Stock controls in admin
+  document.addEventListener('click', e => {
+    const stockBtn = e.target.closest('.stock-btn');
+    if (!stockBtn) return;
+    const id = stockBtn.dataset.id;
+    if (!id) return;
+    if (stockBtn.dataset.stockAction === 'plus') {
+      stock[id] = (stock[id] || 0) + 1;
+    } else {
+      stock[id] = Math.max(0, (stock[id] || 0) - 1);
+    }
+    saveStock();
+    // Update display
+    const numEl = $('stockNum_' + id);
+    if (numEl) {
+      numEl.textContent = stock[id];
+      numEl.className = 'stock-num ' + (stock[id]===0?'zero':(stock[id]<=2?'low':''));
+    }
+    // Re-render products if visible
+    renderProducts();
+    updateCart();
+  });
+}
+
+function init() {
+  loadStock();
+  loadOrders();
+  renderProducts();
+  updateCart();
+  bindEvents();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

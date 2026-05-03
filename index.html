@@ -163,30 +163,6 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 .order-items-recap{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 18px;text-align:left;font-size:14px}
 .order-items-recap .total-line{display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:15px}
 
-/* ADMIN */
-.admin-fab{position:fixed;bottom:20px;left:20px;width:42px;height:42px;border-radius:50%;background:var(--ink);color:var(--bg);border:none;font-size:16px;cursor:pointer;z-index:50;display:flex;align-items:center;justify-content:center;opacity:.3;transition:opacity .2s}
-.admin-fab:hover{opacity:1}
-.admin-backdrop{position:fixed;inset:0;background:rgba(45,37,25,.5);z-index:70;display:none;align-items:center;justify-content:center;padding:12px}
-.admin-backdrop.show{display:flex}
-.admin-panel{background:var(--panel);border-radius:var(--radius);width:100%;max-width:960px;height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
-.admin-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line);flex-shrink:0}
-.admin-header h2{font-family:var(--serif);font-size:24px;margin:0}
-.admin-close{background:transparent;border:none;font-size:24px;color:var(--ink-3);cursor:pointer;padding:4px}
-.admin-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);flex-shrink:0;padding:0 24px}
-.admin-tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;transition:all .15s}
-.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.admin-tab:hover{color:var(--ink)}
-.admin-body{flex:1;overflow:hidden}
-.admin-view{display:none;height:100%}
-.admin-view.active{display:block}
-.admin-view iframe{width:100%;height:100%;border:none}
-.admin-local{padding:24px;overflow-y:auto;height:100%}
-.admin-table{width:100%;border-collapse:collapse;font-size:13px}
-.admin-table th{text-align:left;padding:10px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);border-bottom:1px solid var(--line);font-weight:600}
-.admin-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-.admin-order-items{font-size:11.5px;color:var(--ink-3);max-width:180px}
-.admin-note{margin-top:16px;padding:12px 16px;background:var(--bg-2);border-radius:var(--radius-sm);font-size:12.5px;color:var(--ink-3);line-height:1.6}
-.admin-note strong{color:var(--ink)}
 
 /* Stock management in admin */
 .stock-section{margin-bottom:28px}
@@ -364,55 +340,12 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   </div>
 </div>
 
-<!-- ADMIN -->
-<button class="admin-fab" id="adminFab" title="Админ">⚙</button>
-<div class="admin-backdrop" id="adminBackdrop">
-  <div class="admin-panel">
-    <div class="admin-header">
-      <h2>Админка</h2>
-      <button class="admin-close" id="adminClose">✕</button>
-    </div>
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="sheet">Google Таблица</button>
-      <button class="admin-tab" data-tab="stock">Остатки</button>
-      <button class="admin-tab" data-tab="local">Локальные заказы</button>
-    </div>
-    <div class="admin-body">
-      <div class="admin-view active" id="adminViewSheet">
-        <iframe id="sheetFrame" src="about:blank"></iframe>
-      </div>
-      <div class="admin-view" id="adminViewStock">
-        <div class="admin-local">
-          <div class="stock-section">
-            <h3>Управление остатками</h3>
-            <div class="stock-grid" id="stockGrid"></div>
-          </div>
-          <div class="admin-note">
-            <strong>Как работают остатки:</strong> Когда остаток = 0, кнопка товара автоматически меняется на «Предзаказ». Покупатель заполняет форму и переходит в WhatsApp — там вы обсуждаете условия предзаказа. При каждом подтверждённом заказе остаток уменьшается на 1 автоматически.
-          </div>
-        </div>
-      </div>
-      <div class="admin-view" id="adminViewLocal">
-        <div class="admin-local">
-          <div style="overflow-x:auto">
-            <table class="admin-table">
-              <thead><tr><th>№</th><th>Дата</th><th>Тип</th><th>Имя</th><th>WhatsApp</th><th>Товары</th><th>Сумма</th><th>Промокод</th><th>Статус</th></tr></thead>
-              <tbody id="adminRows"></tbody>
-            </table>
-          </div>
-          <div class="admin-note"><strong>Резервная копия.</strong> Основные данные в Google Таблице. Здесь видны заказы из этого браузера.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 // ============================================================
 // НАСТРОЙКИ
 // ============================================================
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoXwTzP0y5RF_CsQF4qtkIj4L5US8caN6mTnGi-2OKFL7zdiSzZGqGD-Z4t91XxCf7lg/exec';
-const GOOGLE_SHEET_EMBED = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpyEDhg9PTD4XBDmjto2vb4NttuRodHjZwROABsJiIplgIyjZ2DbXjKrGmc_8d8OC0_r4Ph2LU6Z1y/pubhtml';
 const MY_WHATSAPP = '996707050325';
 const COMMISSION_RATE = 0.15;
 const STOCK_KEY = 'shop_stock_v1';
@@ -903,32 +836,6 @@ function bindEvents() {
   $('dashLoadBtn').addEventListener('click', loadDashboard);
   $('dashPromoInput').addEventListener('keydown', e => { if(e.key==='Enter') loadDashboard(); });
 
-  // Admin open
-  $('adminFab').addEventListener('click', () => {
-    const pwd = prompt('Введите пароль:');
-    if (pwd !== 'venera5555') { alert('Неверный пароль'); return; }
-    if (GOOGLE_SHEET_EMBED) {
-      $('sheetFrame').src = GOOGLE_SHEET_EMBED;
-    }
-    renderStockGrid();
-    renderLocalOrders();
-    $('adminBackdrop').classList.add('show');
-  });
-
-  $('adminClose').addEventListener('click', () => { $('adminBackdrop').classList.remove('show'); $('sheetFrame').src='about:blank'; });
-  $('adminBackdrop').addEventListener('click', e => { if(e.target===$('adminBackdrop')){ $('adminBackdrop').classList.remove('show'); $('sheetFrame').src='about:blank'; } });
-
-  // Admin tabs
-  document.querySelectorAll('.admin-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
-      tab.classList.add('active');
-      const tabName = tab.dataset.tab;
-      const viewMap = { sheet:'Sheet', stock:'Stock', local:'Local' };
-      $('adminView' + viewMap[tabName]).classList.add('active');
-    });
-  });
 
   // Stock controls in admin
   document.addEventListener('click', e => {

@@ -1560,11 +1560,12 @@
     clearTimeout(_cloudSaveTimer);
     _cloudSaveTimer = setTimeout(function () {
       const stamp = Date.now();
+      const base = _lastCloudUpdatedAt;   // версия, поверх которой мы пишем
       _lastCloudUpdatedAt = stamp;
       fetch(UNIT_SYNC_URL, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify({ batches: state.batches, updatedAt: stamp })
+        body: JSON.stringify({ batches: state.batches, updatedAt: stamp, base: base })
       }).then(function () { _pendingSave = false; })
         .catch(function (e) { _pendingSave = false; console.warn('Sync save error:', e); });
     }, 1200);

@@ -2,29 +2,23 @@
 
 > Этот файл — **памятка/резерв**. Сам код ниже работает не отсюда, а только
 > после того, как ты вставишь его в `script.google.com` и развернёшь.
-> Это ОТДЕЛЬНЫЙ скрипт, он НЕ связан со скриптом заказов и не может его сломать.
+> Это ОТДЕЛЬНЫЙ скрипт («Unit Synk»), он НЕ связан со скриптом заказов.
 
-## Шаг 1. Создать скрипт
+## Версия 2 — с защитой от перезаписи устаревшими данными
 
-1. Открой <https://script.google.com>
-2. Нажми **«Новый проект»** (New project).
-3. Удали весь код по умолчанию и вставь код из блока ниже.
-4. Нажми **сохранить** (значок дискеты), назови проект, например `Unit Sync`.
+Раньше любое устройство могло залить свою (старую) копию и «воскресить»
+удалённое. Теперь сервер принимает запись, **только если она сделана поверх
+актуальной версии** (`base` совпадает с тем, что лежит в облаке). Старые/
+устаревшие устройства получают `stale` и не могут перезатереть свежие данные.
 
-## Шаг 2. Код скрипта
+## Код скрипта (вставить ВЕСЬ, заменив старый)
 
 ```javascript
-/**
- * Unit — синхронизация расчётов между устройствами.
- * Отдельный веб-апп. Хранит JSON расчётов в ячейке A1 собственной таблицы.
- */
 function getSyncSheet_() {
   var props = PropertiesService.getScriptProperties();
   var id = props.getProperty('UNIT_SHEET_ID');
   var ss = null;
-  if (id) {
-    try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; }
-  }
+  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
   if (!ss) {
     ss = SpreadsheetApp.create('Unit — данные расчётов');
     props.setProperty('UNIT_SHEET_ID', ss.getId());
@@ -40,33 +34,46 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var body = (e && e.postData) ? e.postData.contents : '';
-  getSyncSheet_().getRange('A1').setValue(body);
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok' }))
-    .setMimeType(ContentService.MimeType.JSON);
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'busy' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  try {
+    var sheet = getSyncSheet_();
+    var incoming;
+    try { incoming = JSON.parse(e.postData.contents); } catch (err) { incoming = null; }
+    if (!incoming || !incoming.batches) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'bad data' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var currentRaw = sheet.getRange('A1').getValue();
+    var currentUpdatedAt = 0;
+    if (currentRaw) {
+      try { currentUpdatedAt = JSON.parse(currentRaw).updatedAt || 0; } catch (err) {}
+    }
+    // Защита: писать можно только поверх актуальной версии.
+    if (currentUpdatedAt !== 0 && incoming.base !== currentUpdatedAt) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'stale', current: currentUpdatedAt }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var toStore = JSON.stringify({ batches: incoming.batches, updatedAt: incoming.updatedAt || (new Date()).getTime() });
+    sheet.getRange('A1').setValue(toStore);
+    return ContentService.createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
 }
 ```
 
-## Шаг 3. Развернуть как веб-приложение
+## Как обновить (НЕ создавать новое развёртывание!)
 
-1. Справа сверху: **«Развернуть»** → **«Новое развёртывание»** (Deploy → New deployment).
-2. Тип (шестерёнка) → **«Веб-приложение»** (Web app).
-3. Настройки:
-   - **Запуск от имени:** Я (Me)
-   - **Доступ:** Все (Anyone)
-4. **«Развернуть»** → пройди авторизацию (выбери свой аккаунт →
-   «Дополнительно» → «Перейти к проекту» → «Разрешить»).
-5. Скопируй **URL веб-приложения** (заканчивается на `/exec`).
-6. Пришли этот URL в чат — я впишу его в Юнит, и синхронизация заработает.
+1. `script.google.com` → проект **«Unit Synk»**.
+2. Выдели весь код (`Ctrl+A`) → удали → вставь код выше → сохрани (`Ctrl+S`).
+3. **«Начать развертывание»** → **«Управление развертываниями»**.
+4. У активного развёртывания нажми **карандаш ✏️** → поле **«Версия»** →
+   **«Новая версия»** → **«Развернуть»**.
+5. URL останется прежним — менять ничего в Юните не нужно.
 
-## Как это работает
-
-- Юнит при открытии загружает расчёты из этой таблицы (облако).
-- При изменении — сохраняет обратно (с задержкой ~1 сек).
-- Нет интернета → Юнит работает локально, как раньше.
-- Принцип «кто последним сохранил — тот и прав»: не редактируй на двух
-  устройствах одновременно.
-
-> Ограничение: ячейка A1 вмещает до 50 000 символов — для расчётов закупа
-> этого с огромным запасом хватит.
+> Ограничение: ячейка A1 вмещает до 50 000 символов — для расчётов с запасом хватит.

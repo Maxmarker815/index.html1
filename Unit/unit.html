@@ -1407,18 +1407,13 @@
 
   <!-- Setup block (показывается если нет URL скрипта) -->
   <div class="orders-script-setup" id="ordersSetup" style="display:none">
-    <strong>Вставь URL твоего Google Apps Script</strong><br>
-    Это тот же URL что в <code>GOOGLE_SCRIPT_URL</code> в <code>index.html</code>. Он нужен чтобы читать заказы и подтверждать оплату.
-    <input type="text" class="orders-script-input" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/...">
+    <strong>Подключение к заказам</strong><br>
+    <b>URL</b> — тот же, что <code>GOOGLE_SCRIPT_URL</code> в магазине. <b>Секретный ключ</b> — код доступа к заказам, его знаешь только ты (вводится один раз на этом устройстве).
+    <input type="text" class="orders-script-input" id="scriptUrlInput" placeholder="URL скрипта: https://script.google.com/macros/s/...">
+    <input type="text" class="orders-script-input" id="scriptTokenInput" placeholder="Секретный ключ" style="margin-top:8px">
     <div style="margin-top: 10px; display: flex; gap: 8px;">
       <button class="btn primary" onclick="saveScriptUrl()">Сохранить и загрузить</button>
       <button class="btn ghost" onclick="document.getElementById('ordersSetup').style.display='none'">Отмена</button>
-    </div>
-    <div style="margin-top: 14px; font-size: 12px; color: var(--ink-3); line-height: 1.6;">
-      <strong style="color: var(--ink);">Также нужно обновить Google Apps Script</strong> — добавить:<br>
-      • <code>doGet?action=all_orders</code> — возвращает все заказы<br>
-      • <code>doPost action=confirm</code> — меняет статус на «Оплачен»<br>
-      Готовый код есть в описании проекта.
     </div>
   </div>
 
@@ -1434,7 +1429,7 @@
     <button class="orders-refresh-btn" onclick="loadOrders()">
       <span id="refreshSpinner">↻</span> Обновить
     </button>
-    <button class="orders-refresh-btn" onclick="document.getElementById('ordersSetup').style.display='block'" style="margin-left:4px; font-size:11.5px; color: var(--ink-3);">⚙ URL скрипта</button>
+    <button class="orders-refresh-btn" onclick="openOrdersSetup()" style="margin-left:4px; font-size:11.5px; color: var(--ink-3);">⚙ Подключение</button>
   </div>
 
   <div class="orders-list" id="ordersList">
@@ -2491,27 +2486,38 @@
 
   // ============= ORDERS MODULE =============
   const SCRIPT_URL_KEY = 'pdd_script_url';
-  const ORDERS_TOKEN = 'xqed7J7HxuZrFXzR7g4PEJJChRQbtx9vIFPS7A4x'; // секретный ключ для all_orders / confirm
+  const ORDERS_TOKEN_KEY = 'pdd_admin_token'; // секретный ключ хранится в браузере, НЕ в коде
   let allOrders = [];
   let currentOrderFilter = 'all';
 
   function getScriptUrl() {
     return localStorage.getItem(SCRIPT_URL_KEY) || '';
   }
+  function getOrdersToken() {
+    return localStorage.getItem(ORDERS_TOKEN_KEY) || '';
+  }
+  function openOrdersSetup() {
+    const u = document.getElementById('scriptUrlInput');
+    const t = document.getElementById('scriptTokenInput');
+    if (u) u.value = getScriptUrl();
+    if (t) t.value = getOrdersToken();
+    document.getElementById('ordersSetup').style.display = 'block';
+  }
 
   function saveScriptUrl() {
     const val = document.getElementById('scriptUrlInput').value.trim();
     if (!val) return alert('Введи URL скрипта');
+    const tok = document.getElementById('scriptTokenInput').value.trim();
     localStorage.setItem(SCRIPT_URL_KEY, val);
+    localStorage.setItem(ORDERS_TOKEN_KEY, tok);
     document.getElementById('ordersSetup').style.display = 'none';
     loadOrders();
   }
 
   async function loadOrders() {
     const url = getScriptUrl();
-    if (!url) {
-      document.getElementById('ordersSetup').style.display = 'block';
-      document.getElementById('scriptUrlInput').value = '';
+    if (!url || !getOrdersToken()) {
+      openOrdersSetup();
       return;
     }
 
@@ -2523,9 +2529,14 @@
     errEl.style.display = 'none';
 
     try {
-      const resp = await fetch(`${url}?action=all_orders&token=${ORDERS_TOKEN}`);
+      const resp = await fetch(`${url}?action=all_orders&token=${encodeURIComponent(getOrdersToken())}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
+      if (data && data.status === 'error') {
+        errEl.textContent = 'Доступ закрыт: проверь секретный ключ. Нажми «⚙ Подключение» и впиши ключ заново.';
+        errEl.style.display = 'block';
+        return;
+      }
       allOrders = Array.isArray(data) ? data : [];
       renderOrders();
       updateOrdersBadge();
@@ -2645,7 +2656,7 @@
     btn.textContent = '⏳ Отправляю...';
 
     try {
-      const resp = await fetch(`${url}?action=confirm&orderId=${encodeURIComponent(orderId)}&token=${ORDERS_TOKEN}`);
+      const resp = await fetch(`${url}?action=confirm&orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(getOrdersToken())}`);
       const data = await resp.json();
       if (data.success) {
         // Update local state
@@ -2685,10 +2696,13 @@
     if (navOrders) {
       navOrders.addEventListener('click', () => switchView('orders'));
     }
-    // Pre-fill saved URL
+    // Pre-fill saved URL + token
     const saved = getScriptUrl();
     const inp = document.getElementById('scriptUrlInput');
     if (inp && saved) inp.value = saved;
+    const savedTok = getOrdersToken();
+    const tinp = document.getElementById('scriptTokenInput');
+    if (tinp && savedTok) tinp.value = savedTok;
   });
 
   // Spin animation

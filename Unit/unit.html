@@ -1550,15 +1550,23 @@
   const UNIT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbxmMJQANhU3pNF6Gs-dAGj9dTQZUN9Mo7Rm8ck1mG6LKiifL0aL-v_t8nlPUaGbOH-9lg/exec';
 
   let _cloudSaveTimer = null;
+  let _lastCloudUpdatedAt = 0;   // метка версии, которую мы сейчас держим
+  let _pendingSave = false;      // есть несохранённые в облако локальные правки
+  let _cloudRefreshStarted = false;
+
   function cloudSave() {
     if (!UNIT_SYNC_URL) return;
+    _pendingSave = true;
     clearTimeout(_cloudSaveTimer);
     _cloudSaveTimer = setTimeout(function () {
+      const stamp = Date.now();
+      _lastCloudUpdatedAt = stamp;
       fetch(UNIT_SYNC_URL, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify({ batches: state.batches, updatedAt: Date.now() })
-      }).catch(function (e) { console.warn('Sync save error:', e); });
+        body: JSON.stringify({ batches: state.batches, updatedAt: stamp })
+      }).then(function () { _pendingSave = false; })
+        .catch(function (e) { _pendingSave = false; console.warn('Sync save error:', e); });
     }, 1200);
   }
 
@@ -1574,12 +1582,49 @@
         const parsed = JSON.parse(data.data);
         if (parsed && Array.isArray(parsed.batches)) {
           state.batches = parsed.batches;
+          _lastCloudUpdatedAt = parsed.updatedAt || 0;
           saveLocal();
           return true;
         }
       }
     } catch (e) { console.warn('Sync load error:', e); }
     return false;
+  }
+
+  // Подтянуть из облака версию новее нашей. Не трогаем экран,
+  // если есть несохранённые правки или пользователь печатает в поле.
+  async function cloudRefresh() {
+    if (!UNIT_SYNC_URL || _pendingSave) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(function () { ctrl.abort(); }, 6000);
+      const resp = await fetch(UNIT_SYNC_URL, { signal: ctrl.signal });
+      clearTimeout(t);
+      const data = await resp.json();
+      if (!data || data.status !== 'ok' || !data.data) return;
+      const parsed = JSON.parse(data.data);
+      if (!parsed || !Array.isArray(parsed.batches)) return;
+      const remoteUpdated = parsed.updatedAt || 0;
+      if (remoteUpdated <= _lastCloudUpdatedAt) return; // в облаке не новее — ничего не делаем
+      state.batches = parsed.batches;
+      _lastCloudUpdatedAt = remoteUpdated;
+      saveLocal();
+      if (state.activeView !== 'all' && !state.batches.find(function (b) { return b.id === state.activeView; })) {
+        state.activeView = 'all';
+      }
+      renderSidebar();
+      switchView(state.activeView);
+    } catch (e) { /* нет сети — молча игнорируем */ }
+  }
+
+  function setupCloudRefresh() {
+    if (!UNIT_SYNC_URL || _cloudRefreshStarted) return;
+    _cloudRefreshStarted = true;
+    setInterval(cloudRefresh, 15000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) cloudRefresh(); });
+    window.addEventListener('focus', cloudRefresh);
   }
 
   function calcProduct(p, config) {
@@ -2480,6 +2525,7 @@
       state.activeView = 'all';
     }
     switchView(state.activeView);
+    setupCloudRefresh();
   }
 
   document.addEventListener('DOMContentLoaded', init);

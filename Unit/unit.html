@@ -1531,9 +1531,13 @@
   const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
 
-  function save() {
+  function saveLocal() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch (e) { console.warn(e); }
+  }
+  function save() {
+    saveLocal();
+    cloudSave();
   }
 
   function load() {
@@ -1544,6 +1548,43 @@
         if (parsed.batches) state = parsed;
       }
     } catch (e) { console.warn(e); }
+  }
+
+  // ====== Синхронизация расчётов между устройствами ======
+  // Отдельный веб-апп (НЕ скрипт заказов). Пустой URL = синхронизация выключена.
+  const UNIT_SYNC_URL = ''; // ← сюда вставим URL после деплоя скрипта
+
+  let _cloudSaveTimer = null;
+  function cloudSave() {
+    if (!UNIT_SYNC_URL) return;
+    clearTimeout(_cloudSaveTimer);
+    _cloudSaveTimer = setTimeout(function () {
+      fetch(UNIT_SYNC_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ batches: state.batches, updatedAt: Date.now() })
+      }).catch(function (e) { console.warn('Sync save error:', e); });
+    }, 1200);
+  }
+
+  async function cloudLoad() {
+    if (!UNIT_SYNC_URL) return false;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(function () { ctrl.abort(); }, 6000);
+      const resp = await fetch(UNIT_SYNC_URL, { signal: ctrl.signal });
+      clearTimeout(t);
+      const data = await resp.json();
+      if (data && data.status === 'ok' && data.data) {
+        const parsed = JSON.parse(data.data);
+        if (parsed && Array.isArray(parsed.batches)) {
+          state.batches = parsed.batches;
+          saveLocal();
+          return true;
+        }
+      }
+    } catch (e) { console.warn('Sync load error:', e); }
+    return false;
   }
 
   function calcProduct(p, config) {
@@ -2417,8 +2458,9 @@
     if ($('dateNow1')) $('dateNow1').textContent = formatted;
   }
 
-  function init() {
+  async function init() {
     load();
+    await cloudLoad();
 
     if (state.batches.length === 0) {
       const batch = createBatch('Пример — летние товары', new Date().getMonth());

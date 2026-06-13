@@ -503,15 +503,15 @@ function updateCart() {
 
   normalItems.forEach(([id,qty]) => {
     const p = PRODUCTS.find(x=>x.id===id);
-    const sub = p.price * qty;
+    const sub = getPrice(p) * qty;
     total += sub;
     linesHtml += `<div class="cart-line"><span>${p.name} × ${qty}</span><span class="price">${fmt(sub)}</span></div>`;
   });
 
   preItems.forEach(id => {
     const p = PRODUCTS.find(x=>x.id===id);
-    total += p.price;
-    linesHtml += `<div class="cart-line"><span>${p.name} <span class="preorder-tag">предзаказ</span></span><span class="price">${fmt(p.price)}</span></div>`;
+    total += getPrice(p);
+    linesHtml += `<div class="cart-line"><span>${p.name} <span class="preorder-tag">предзаказ</span></span><span class="price">${fmt(getPrice(p))}</span></div>`;
   });
 
   $('cartLines').innerHTML = linesHtml;

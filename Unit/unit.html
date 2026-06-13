@@ -1196,9 +1196,6 @@
         <button class="nav-item" id="exportAllBtn">
           <span class="label">Экспорт CSV</span>
         </button>
-        <button class="nav-item" id="settingsBtn">
-          <span class="label">Сохранить как приложение</span>
-        </button>
       </div>
     </div>
     <svg class="floral-branch" viewBox="0 0 260 210" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2451,10 +2448,6 @@
       };
       reader.readAsText(file);
       e.target.value = '';
-    });
-
-    $('settingsBtn').addEventListener('click', () => {
-      $('modalInstall').classList.add('show');
     });
   }
 

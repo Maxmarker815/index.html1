@@ -2025,7 +2025,7 @@
     const ordersEl = $('view-orders');
     if (viewId === 'orders') {
       state.activeView = 'orders';
-      save();
+      saveLocal();
       if (ordersEl) ordersEl.style.display = 'block';
       $('view-all').style.display = 'none';
       $('view-batch').style.display = 'none';
@@ -2038,7 +2038,7 @@
 
     state.activeView = viewId;
     if (filter !== undefined) state.statusFilter = filter;
-    save();
+    saveLocal();
     renderSidebar();
 
     if (viewId === 'all') {

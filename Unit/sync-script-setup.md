@@ -20,7 +20,7 @@ function getSyncSheet_() {
   var ss = null;
   if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
   if (!ss) {
-    ss = SpreadsheetApp.create('Unit — данные расчётов');
+    ss = SpreadsheetApp.create('Unit Sync Data');
     props.setProperty('UNIT_SHEET_ID', ss.getId());
   }
   return ss.getSheets()[0];
@@ -52,7 +52,7 @@ function doPost(e) {
     if (currentRaw) {
       try { currentUpdatedAt = JSON.parse(currentRaw).updatedAt || 0; } catch (err) {}
     }
-    // Защита: писать можно только поверх актуальной версии.
+    // reject writes made on top of an outdated version
     if (currentUpdatedAt !== 0 && incoming.base !== currentUpdatedAt) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'stale', current: currentUpdatedAt }))
         .setMimeType(ContentService.MimeType.JSON);
